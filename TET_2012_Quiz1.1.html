@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lourds English Academy Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f3f4f6;
+        }
+        .container {
+            max-width: 1200px;
+        }
+        .quiz-card {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .answer-btn {
+            transition: transform 0.2s ease-in-out;
+        }
+        .answer-btn:hover {
+            transform: translateY(-2px);
+        }
+        .correct {
+            background-color: #34d399 !important; /* Tailwind green-400 */
+        }
+        .wrong {
+            background-color: #f87171 !important; /* Tailwind red-400 */
+        }
+        .question-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .question-box-unattended {
+            background-color: #f3f4f6;
+            border: 1px solid #d1d5db;
+        }
+        .question-box-attended {
+            background-color: #34d399; /* green-500 */
+            color: white;
+        }
+        .question-box-marked {
+            background-color: #f87171; /* red-500 */
+            color: white;
+        }
+        .result-question-card {
+            border: 1px solid #e5e7eb;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            color: rgba(0, 0, 0, 0.1);
+            font-size: 3rem;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 1000;
+            white-space: nowrap;
+        }
+        /* Specific formatting for questions */
+        .italic-underline {
+            font-style: italic;
+            text-decoration: underline;
+        }
+        .italic-only {
+            font-style: italic;
+        }
+        .underline-only {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div id="app-container" class="bg-white quiz-card rounded-xl p-8 w-full max-w-7xl">
+
+        <!-- Start Page: Participant Details Form -->
+        <div id="start-page" class="w-full max-w-md mx-auto">
+            <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Lourds English Academy Quiz</h1>
+            <p class="text-center text-gray-600 mb-8">Please enter your details to begin the quiz.</p>
+
+            <form id="participant-form" class="space-y-4">
+                <div>
+                    <label for="name" class="block text-left text-sm font-medium text-gray-700">Name</label>
+                    <input type="text" id="name" name="name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2">
+                </div>
+                <div>
+                    <label for="phone" class="block text-left text-sm font-medium text-gray-700">Phone Number</label>
+                    <input type="tel" id="phone" name="phone" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2">
+                </div>
+                <div>
+                    <label for="email" class="block text-left text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" id="email" name="email" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2">
+                </div>
+                <div>
+                    <label for="subject" class="block text-left text-sm font-medium text-gray-700">Subject</label>
+                    <select id="subject" name="subject" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2">
+                        <option value="">Select a Subject</option>
+                        <option value="Tamil">Tamil</option>
+                        <option value="English">English</option>
+                        <option value="Maths">Maths</option>
+                        <option value="Physics">Physics</option>
+                        <option value="Chemistry">Chemistry</option>
+                        <option value="Botany">Botany</option>
+                        <option value="Zoology">Zoology</option>
+                        <option value="History">History</option>
+                        <option value="Geography">Geography</option>
+                        <option value="Others">Others</option>
+                    </select>
+                </div>
+                <div id="other-subject-container" class="hidden">
+                    <label for="other-subject" class="block text-left text-sm font-medium text-gray-700">Enter Subject</label>
+                    <input type="text" id="other-subject" name="other-subject" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2">
+                </div>
+                <button type="submit" class="w-full mt-6 px-8 py-3 bg-blue-500 text-white font-bold rounded-lg shadow-md hover:bg-blue-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75">
+                    Start Quiz
+                </button>
+            </form>
+        </div>
+
+        <!-- Quiz Page -->
+        <div id="quiz-page" class="hidden md:flex md:flex-row flex-col gap-8">
+            <!-- Left Panel: Question Grid & Counter -->
+            <div class="md:w-1/3 w-full bg-gray-50 rounded-lg p-6 flex flex-col items-center">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">Question Grid</h2>
+                <div id="question-grid" class="grid grid-cols-5 md:grid-cols-6 lg:grid-cols-5 gap-4">
+                    <!-- Question boxes dynamically generated here -->
+                </div>
+                <div id="counter-container" class="mt-6 flex flex-col md:flex-row items-center gap-4 text-gray-600 font-medium">
+                    <p>Attended: <span id="attended-count">0</span></p>
+                    <p>Unattended: <span id="unattended-count">30</span></p>
+                    <p>Marked: <span id="marked-count">0</span></p>
+                </div>
+            </div>
+            
+            <!-- Right Panel: Question & Answers -->
+            <div class="md:w-2/3 w-full flex flex-col">
+                <div id="question-card" class="bg-white rounded-xl p-8 w-full quiz-card mb-4">
+                    <p id="question-text" class="text-lg text-gray-800 mb-6 leading-relaxed"></p>
+                    <div id="special-parts-container" class="mb-6 flex flex-col gap-2"></div>
+                    <div id="answers-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Answer buttons dynamically generated here -->
+                    </div>
+                </div>
+
+                <div class="flex flex-col md:flex-row gap-4 justify-between">
+                    <button id="mark-button" class="px-6 py-2 text-red-500 font-bold rounded-lg border-2 border-red-500 hover:bg-red-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-75">
+                        Mark for Later
+                    </button>
+                    <div class="flex-grow"></div>
+                    <button id="next-button" class="px-8 py-3 bg-blue-500 text-white font-bold rounded-lg shadow-md hover:bg-blue-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75">
+                        Next
+                    </button>
+                    <button id="submit-quiz-button" class="hidden px-8 py-3 bg-green-500 text-white font-bold rounded-lg shadow-md hover:bg-green-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75">
+                        Submit Quiz
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Page -->
+        <div id="result-page" class="hidden w-full max-w-full mx-auto p-4 md:p-8">
+            <div id="watermark-element" class="hidden watermark">LOURDS ENGLISH ACADEMY</div>
+            <h1 class="text-3xl font-bold text-center text-gray-800 mb-4">Quiz Results</h1>
+            <h2 id="final-score" class="text-2xl font-bold text-center text-gray-700 mb-8"></h2>
+            
+            <div id="participant-summary" class="bg-gray-100 rounded-xl p-4 md:p-6 mb-8 text-sm md:text-base">
+                <h3 class="font-bold text-lg mb-2">Participant Details:</h3>
+                <p><strong>Name:</strong> <span id="summary-name"></span></p>
+                <p><strong>Email:</strong> <span id="summary-email"></span></p>
+                <p><strong>Phone:</strong> <span id="summary-phone"></span></p>
+                <p><strong>Subject:</strong> <span id="summary-subject"></span></p>
+            </div>
+
+            <div id="result-questions-container" class="space-y-6">
+                <!-- Detailed results dynamically generated here -->
+            </div>
+
+            <div class="flex justify-center mt-8 space-x-4">
+                <button id="restart-button" class="px-8 py-3 bg-blue-500 text-white font-bold rounded-lg shadow-md hover:bg-blue-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75">
+                    Restart Quiz
+                </button>
+                <button id="download-button" class="px-8 py-3 bg-green-500 text-white font-bold rounded-lg shadow-md hover:bg-green-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75">
+                    Download Test Paper
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const passage = `Most human beings are awake during the day and sleep at night. Owls live the opposite way. Owls are nocturnal. This means that they sleep all day and stay awake at night. Because owls are nocturnal, this means they must eat at night. But finding food in the dark is difficult. To help them, they have special eyes and ears.
+Owls have very large eyes. These eyes absorb more light than normal. Since there is little light during the night, it is helpful to be able to absorb more of it. This

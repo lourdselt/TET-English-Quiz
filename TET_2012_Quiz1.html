@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teacher Eligibility Test Quiz</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+body { font-family: Arial, sans-serif; background:#f0f2f5; }
+#question-grid button { width: 35px; height: 35px; margin: 2px; color: white; font-weight: bold; border-radius: 4px; border: none; font-size: 0.9rem; }
+.unanswered { background-color: #dc3545; }
+.answered { background-color: #28a745; }
+.marked { background-color: #6f42c1; }
+.passage-container { max-height: 220px; overflow-y: auto; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #ced4da; margin-bottom: 15px; }
+.timer { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; }
+.correct { color: green; font-weight: bold; }
+.wrong { color: red; font-weight: bold; }
+.progress { height: 20px; margin-bottom: 15px; }
+#result { position: relative; }
+#result::before {
+  content: "LOURDS ENGLISH ACADEMY";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-30deg);
+  font-size: 50px;
+  color: rgba(0,0,0,0.1);
+  pointer-events: none;
+  z-index: 0;
+}
+.question-instruction { font-weight: bold; }
+.form-check { margin-bottom: 5px; }
+</style>
+</head>
+<body>
+
+<div class="container my-4">
+<div id="login" class="card p-4 shadow">
+<h3 class="mb-3">Enter Candidate Details</h3>
+<input type="text" id="name" class="form-control mb-2" placeholder="Name" required>
+<input type="email" id="email" class="form-control mb-2" placeholder="Email" required>
+<input type="tel" id="phone" class="form-control mb-2" placeholder="Phone Number" required>
+<select id="subject" class="form-select mb-2" required>
+  <option value="">Select Subject</option>
+  <option>Tamil</option><option>English</option><option>Maths</option><option>Physics</option>
+  <option>Chemistry</option><option>Botony</option><option>Zoology</option><option>History</option><option>Geography</option>
+</select>
+<button class="btn btn-primary mt-2" onclick="startQuiz()">Start Quiz</button>
+</div>
+</div>
+
+<div id="quiz" class="container-fluid" style="display:none;">
+<div class="row">
+<div class="col-md-2 bg-white p-3 shadow">
+<h5 class="text-center mb-3">Questions</h5>
+<div id="question-grid" class="d-flex flex-wrap justify-content-center"></div>
+<div class="mt-3 text-center">
+  <span class="fw-bold">Green:</span> Answered<br>
+  <span class="fw-bold">Red:</span> Unanswered<br>
+  <span class="fw-bold">Purple:</span> Marked
+</div>
+</div>
+
+<div class="col-md-10 p-4">
+<div class="timer text-end" id="timer">Time Remaining: 30:00</div>
+<div class="progress mb-3">
+  <div id="timerBar" class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
+</div>
+<div id="passage-section" class="passage-container" style="display:none;">
+<h5>Read the passage carefully:</h5>
+<p>Most human beings are awake during the day and sleep at night. Owls live the opposite way. Owls are nocturnal. This means that they sleep all day and stay awake at night. Because owls are nocturnal, this means they must eat at night. But finding food in the dark is difficult. To help them, they have special eyes and ears.</p>
+<p>Owls have very large eyes. These eyes absorb more light than normal. Since there is little light during the night, it is helpful to be able to absorb more of it. This helps owls find food in the dark.</p>
+<p>Owls also have very good hearing. Even when owls are in the trees, they can hear small animals moving in the grass below. This helps owls catch their prey even when it is very dark.</p>
+<p>Like owls, mice are also nocturnal animals. Mice have an excellent sense of smell. This helps them find food in the dark.</p>
+<p>Being nocturnal helps mice to hide from many different animals that want to eat them. Most of the birds, snakes and lizards that like to eat mice sleep at night — except, of course, owls!</p>
+</div>
+<div class="card p-3 mb-3 shadow" id="question-area"></div>
+<div class="mb-4">
+<button class="btn btn-secondary me-2" onclick="prevQuestion()">Previous</button>
+<button class="btn btn-secondary me-2" onclick="nextQuestion()">Next</button>
+<button class="btn btn-warning me-2" onclick="markForReview()">Mark for Review</button>
+<button class="btn btn-success" onclick="submitQuiz()">Submit Test</button>
+</div>
+</div>
+</div>
+</div>
+
+<div id="result" class="container my-4" style="display:none;">
+<div class="card p-4 shadow">
+<h3 class="mb-3">Quiz Result</h3>
+<p id="candidate-details"></p>
+<p>Total Questions: 30</p>
+<p>Attempted: <span id="attempted"></span></p>
+<p>Unattempted: <span id="unattempted"></span></p>
+<p>Score: <span id="score"></span></p>
+<div id="answer-review" class="mt-3"></div>
+<button class="btn btn-info mt-3" onclick="downloadResult()">Download Result</button>
+</div>
+</div>
+
+<script>
+const questions=[
+{q:"<span class='question-instruction'>Find the italicized part in the sentence that is incorrect:</span> <em>In some countries in Europe teachers are allowed giving children some home work only at weekends.</em>",options:["in Europe – 1","are allowed – 2","giving – 3","at weekends – 4"],answer:2},
+{q:"<span class='question-instruction'>Choose the correct form of the verb to complete the sentence:</span> When ------------ this morning?",options:["Did you woke up","Did you wake up","Have you woken up","Were you woke up"],answer:1},
+{q:"<span class='question-instruction'>Choose the correct form of the verb to complete the sentence:</span> We ----------- volleyball yesterday",options:["Played","Have played","Had played","Have been playing"],answer:0},
+{q:"<span class='question-instruction'>Choose the correct word to complete the sentence:</span> There is very ---------- petrol in the car. I’ll buy some when I go out",options:["few","much","a little","little"],answer:3},
+{q:"<span class='question-instruction'>Choose the correct word to complete the sentence:</span> He apologized -------------- being late",options:["To","For","On","Of"],answer:1},
+{q:"<span class='question-instruction'>The word ‘diurnal’ is the opposite of the word nocturnal. Using information in the passage we can understand that an animal that is diurnal</span>",options:["sleeps at night and is awake during the day","hunts during the day and is awake at night","sleeps every other night and is awake during the day","hunts at night and sleeps during the day"],answer:0},
+{q:"<span class='question-instruction'>Based on information in paragraph 2, it can be understood that an animal with small eyes</span>",options:["must be diurnal","has trouble seeing in the dark","can see very well at night","must be nocturnal"],answer:1},
+{q:"<span class='question-instruction'>According to the passage, owls can find food in the dark using their sense of</span>",options:["sight only","sight and sound","sight, sound and smell","sight and smell"],answer:1},
+{q:"<span class='question-instruction'>In paragraph 3 the author writes: ‘This helps owls catch their prey when it is very dark.’ What is prey?</span>",options:["A noise that an animal makes during the night","A small animal such as a pet dog or cat","An animal that is hunted by other animals","An enemy"],answer:2},
+{q:"<span class='question-instruction'>According to the passage, mice sleep during the day in order to</span>",options:["find food that other animals cannot","keep themselves safe","store energy for night time activities","stay awake at night"],answer:1},
+{q:"<span class='question-instruction'>Using information in the last paragraph, it can be understood that</span>",options:["owls hunt mice","mice can hide from owls","mice and owls both hide from birds, snakes and lizards","owls sleep at night"],answer:1},
+{q:"<span class='question-instruction'>Which of the following conclusions would work best at the end of this passage?</span>",options:["The owl is a nocturnal animal. This means it is active at night. The owl’s excellent sense of sight and sound enables it to find food in the dark","Mice are nocturnal animals. This means they are active at night. Similar to the owl, mice use their excellent sense of smell to find food in the dark","Some animals are nocturnal. This means they are active at night. The owl and the mouse are good examples of animals that use their senses to find food in the dark","The owl and the mouse sleep during the day and stay awake at night"],answer:2},
+{q:"<span class='question-instruction'>Choose the right question to get the italicized part as the answer:</span> The children are sitting in the garden",options:["Where do children sit?","Where have the children been sitting?","Where are the children sitting?","Where are they sitting?"],answer:2},
+{q:"<span class='question-instruction'>Find the word that is pronounced differently from the others:</span> I. blood II. moon III. soon IV. mood",options:["I – blood","II – moon","III – soon","IV – mood"],answer:0},
+{q:"<span class='question-instruction'>Find the word that is pronounced differently from the others:</span> I. bear II. dare III. fare IV. dear",options:["I – bear","II – dare","III – fare","IV – dear"],answer:3},
+{q:"<span class='question-instruction'>Find the word that is pronounced differently from the others:</span> I. enjoyed II. jumped III. died IV. filled",options:["I – enjoyed","II – jumped","III – died","IV – filled"],answer:1},
+{q:"<span class='question-instruction'>Find the italicized part in the sentence that is incorrect:</span> It is a <em>(well)</em> idea <em>(to encourage)</em> boys <em>(to learn)</em> <em>(to cook)</em>.",options:["well","to encourage","to learn","to cook"],answer:0},
+{q:"<span class='question-instruction'>Choose the word which has almost the same meaning as the italicized one:</span> I help them to assemble the different parts",options:["manufacture","store","check","fit"],answer:3},
+{q:"<span class='question-instruction'>Choose the correct antonym for the italicized word:</span> Travelling is considered very dangerous",options:["harmful","peaceful","safe","exciting"],answer:2},
+{q:"<span class='question-instruction'>Choose the correct antonym for the italicized word:</span> This is a common thing",options:["strange","funny","real","special"],answer:0},
+{q:"<span class='question-instruction'>Read the short conversation and identify the language function:</span> Shrimathy: That remark was uncalled for Venu: I’m sorry, I shouldn’t have said it",options:["apologising","wishing","blaming","forgiving"],answer:0},
+{q:"<span class='question-instruction'>Read the short conversation and identify the language function:</span> Arun: What shall we do this weekend? Sheela: Why don’t we go on a picnic?",options:["welcoming","inviting","suggesting","advising"],answer:2},
+{q:"<span class='question-instruction'>Choose the correct question tag:</span> Mary has answered all the questions,----------?",options:["doesn’t she","didn’t she","wasn’t she","hasn’t she"],answer:3},
+{q:"<span class='question-instruction'>Choose the correct question tag:</span> Hanif wasn’t listening --------------------?",options:["was he","has he","did he","isn’t he"],answer:0},
+{q:"<span class='question-instruction'>Choose the right question to get the italicized part as the answer:</span> Hari is writing a letter.",options:["What does Hari write?","What is Hari writing?","Who is writing a letter?","What is Hari doing?"],answer:1},
+{q:"<span class='question-instruction'>Choose the correct word to complete the sentence:</span> We are satisfied ---------- our son’s progress this term",options:["for","on","about","with"],answer:3},
+{q:"<span class='question-instruction'>Which of the following is a form of the verb ‘be’?</span>",options:["may","am","can","will"],answer:1},
+{q:"<span class='question-instruction'>The passive form of the sentence <em>'The Blue team won the game'</em> is:</span>",options:["The game is won by the Blue team","The game has been won by the Blue team","The game had been won by the Blue team","The game was won by the Blue team"],answer:3},
+{q:"<span class='question-instruction'>The reported form of the question “Renu said to me, ‘Is the movie interesting?’” is:</span>",options:["Renu asked me if the movie was interesting","Renu asked me if the movie has been interesting","Renu asked me if the movie is interesting","Renu asked me if the movie had been interesting"],answer:0},
+{q:"<span class='question-instruction'>Choose the word which has almost the same meaning as the italicized one:</span> She <em>seldom<em> goes to conferences",options:["nearly","rarely","slightly","incredibly"],answer:1}
+];
+
+let currentQuestion=0;
+let selectedAnswers=Array(30).fill(null);
+let markedQuestions=Array(30).fill(false);
+let timerInterval;
+let timeLeft=1800;
+
+function startQuiz() {
+  const name = document.getElementById("name").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+  const subject = document.getElementById("subject").value;
+  if(!name||!email||!phone||!subject){alert("Please fill all details to start the quiz.");return;}
+  document.getElementById("login").style.display="none";
+  document.getElementById("quiz").style.display="block";
+  const grid=document.getElementById("question-grid");
+  questions.forEach((q,idx)=>{
+    const btn=document.createElement("button");
+    btn.innerText=idx+1;
+    btn.className="unanswered";
+    btn.onclick=()=>{currentQuestion=idx;showQuestion();};
+    grid.appendChild(btn);
+  });
+  showQuestion();startTimer();
+}
+
+function showQuestion(){
+  document.getElementById("passage-section").style.display=(currentQuestion>=5 && currentQuestion<=11)?"block":"none";
+  const q=questions[currentQuestion];
+  let html=`<h5>Q${currentQuestion+1}: ${q.q}</h5>`;
+  html+='<div class="mt-3">';
+  q.options.forEach((opt,idx)=>{
+    const checked=selectedAnswers[currentQuestion]===idx?"checked":"";
+    html+=`<div class="form-check">
+      <input class="form-check-input" type="radio" name="q${currentQuestion}" id="q${currentQuestion}_opt${idx}" value="${idx}" ${checked} onchange="selectAnswer(${idx})">
+      <label class="form-check-label" for="q${currentQuestion}_opt${idx}">${opt}</label>
+    </div>`;
+  });
+  html+='</div>';
+  document.getElementById('question-area').innerHTML=html;
+}
+
+function selectAnswer(idx){selectedAnswers[currentQuestion]=idx;markedQuestions[currentQuestion]=false;updateGridColor();}
+function markForReview(){markedQuestions[currentQuestion]=true;updateGridColor();}
+function updateGridColor(){const grid=document.getElementById("question-grid").children;for(let i=0;i<grid.length;i++){if(markedQuestions[i])grid[i].className="marked";else if(selectedAnswers[i]!==null)grid[i].className="answered";else grid[i].className="unanswered";}}
+function prevQuestion(){if(currentQuestion>0){currentQuestion--;showQuestion();}}
+function nextQuestion(){if(currentQuestion<questions.length-1){currentQuestion++;showQuestion();}}
+function submitQuiz(){clearInterval(timerInterval);let score=0,attempted=0;let reviewHtml="<h5>Answer Review:</h5>";questions.forEach((q,idx)=>{const userAns=selectedAnswers[idx];if(userAns!==null)attempted++;if(userAns===q.answer)score++;reviewHtml+=`<p>Q${idx+1}: Your Answer: ${userAns!==null?userAns+1:"-"} | Correct: ${q.answer+1}</p>`;});document.getElementById("quiz").style.display="none";document.getElementById("result").style.display="block";document.getElementById("candidate-details").innerText=`Name: ${document.getElementById("name").value} | Email: ${document.getElementById("email").value} | Phone: ${document.getElementById("phone").value} | Subject: ${document.getElementById("subject").value}`;document.getElementById("attempted").innerText=attempted;document.getElementById("unattempted").innerText=questions.length-attempted;document.getElementById("score").innerText=score;document.getElementById("answer-review").innerHTML=reviewHtml;}
+function startTimer(){timerInterval=setInterval(()=>{if(timeLeft<=0){submitQuiz();return;}timeLeft--;const mins=Math.floor(timeLeft/60);const secs=timeLeft%60;document.getElementById("timer").innerText=`Time Remaining: ${mins}:${secs<10?"0"+secs:secs}`;const percent=(timeLeft/1800)*100;document.getElementById("timerBar").style.width=percent+"%";},1000);}
+function downloadResult(){const name=document.getElementById("name").value;const email=document.getElementById("email").value;const phone=document.getElementById("phone").value;const subject=document.getElementById("subject").value;const attempted=document.getElementById("attempted").innerText;const unattempted=document.getElementById("unattempted").innerText;const score=document.getElementById("score").innerText;const review=document.getElementById("answer-review").innerText;const content=`Candidate: ${name}\nEmail: ${email}\nPhone: ${phone}\nSubject: ${subject}\n\nTotal Questions: 30\nAttempted: ${attempted}\nUnattempted: ${unattempted}\nScore: ${score}\n\nAnswer Review:\n${review}`;const blob=new Blob([content],{type:"text/plain"});const link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download=`${name}_Quiz_Result.txt`;link.click();URL.revokeObjectURL(link.href);}
+</script>
+
+</body>
+</html>

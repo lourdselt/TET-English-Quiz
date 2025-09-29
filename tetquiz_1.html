@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TET Quiz</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 0; padding: 20px; }
+    .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .question { margin-bottom: 15px; font-weight: bold; }
+    .options label { display: block; margin-bottom: 8px; cursor: pointer; padding: 6px; border: 1px solid #ccc; border-radius: 5px; }
+    .options input { margin-right: 8px; }
+    .navigation { margin-top: 20px; display: flex; justify-content: space-between; }
+    button { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; }
+    .btn { background: #007BFF; color: white; }
+    .btn:disabled { background: #ccc; cursor: not-allowed; }
+    .timer { float: right; font-weight: bold; }
+    .results { margin-top: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background: #f1f1f1; }
+    .correct { color: green; }
+    .wrong { color: red; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>TET Practice Quiz <span class="timer" id="timer">30:00</span></h2>
+    <div id="quiz"></div>
+    <div class="navigation">
+      <button id="prevBtn" class="btn">Previous</button>
+      <button id="nextBtn" class="btn">Next</button>
+      <button id="submitBtn" class="btn">Submit</button>
+    </div>
+    <div id="results" class="results" style="display:none;"></div>
+  </div>
+
+<script>
+const questions = [
+  { q: "What is the capital of India?", options: ["Mumbai","New Delhi","Kolkata","Chennai"], answer: 1 },
+  { q: "Which is a primary colour?", options: ["Green","Purple","Red","Black"], answer: 2 },
+  { q: "Solve: 12 + 8 = ?", options: ["18","20","22","16"], answer: 1 },
+  { q: "Which is a mammal?", options: ["Snake","Frog","Whale","Crocodile"], answer: 2 },
+  { q: "Synonym of 'help' is", options: ["Hinder","Assist","Ignore","Delay"], answer: 1 },
+  { q: "Which instrument measures temperature?", options: ["Barometer","Thermometer","Hygrometer","Odometer"], answer: 1 },
+  { q: "Who wrote 'Hamlet'?", options: ["Milton","Shakespeare","Austen","Tolkien"], answer: 1 },
+  { q: "Which is an even number?", options: ["11","13","24","17"], answer: 2 },
+  { q: "Water boils at (°C)", options: ["90","80","100","120"], answer: 2 },
+  { q: "What does 'TET' stand for?", options: ["Teacher Eligibility Test","Teacher Entrance Test","Teaching Efficiency Test","Test of English Teaching"], answer: 0 },
+  // add remaining up to 30 (use same pattern)
+];
+
+let currentQuestion = 0;
+let answers = new Array(questions.length).fill(null);
+let timerDuration = 30 * 60; // 30 minutes in seconds
+let timer;
+
+function showQuestion(index) {
+  const q = questions[index];
+  const quizDiv = document.getElementById("quiz");
+  quizDiv.innerHTML = `
+    <div class="question">${index+1}. ${q.q}</div>
+    <div class="options">
+      ${q.options.map((opt,i)=>`
+        <label><input type="radio" name="option" value="${i}" ${answers[index]===i?"checked":""}/> ${opt}</label>
+      `).join("")}
+    </div>
+  `;
+  document.getElementById("prevBtn").disabled = index===0;
+  document.getElementById("nextBtn").disabled = index===questions.length-1;
+}
+
+function updateTimer() {
+  let minutes = Math.floor(timerDuration / 60);
+  let seconds = timerDuration % 60;
+  document.getElementById("timer").textContent = `${minutes}:${seconds<10?"0":""}${seconds}`;
+  if (timerDuration <= 0) {
+    clearInterval(timer);
+    submitQuiz();
+  }
+  timerDuration--;
+}
+
+function submitQuiz() {
+  clearInterval(timer);
+  let correct = 0;
+  let resultsHTML = "<h3>Results:</h3>";
+  questions.forEach((q,i)=>{
+    let chosen = answers[i];
+    let correctAns = q.options[q.answer];
+    if (chosen===q.answer) correct++;
+    resultsHTML += `<p>${i+1}. ${q.q}<br>
+    Your answer: <span class="${chosen===q.answer?"correct":"wrong"}">${chosen!==null?q.options[chosen]:"(No answer)"}</span><br>
+    Correct answer: <b>${correctAns}</b></p>`;
+  });
+  resultsHTML += `<h4>Score: ${correct} / ${questions.length}</h4>`;
+  document.getElementById("results").style.display="block";
+  document.getElementById("results").innerHTML=resultsHTML;
+  document.getElementById("quiz").style.display="none";
+  document.querySelector(".navigation").style.display="none";
+}
+
+// Event listeners
+document.getElementById("prevBtn").addEventListener("click",()=>{
+  saveAnswer();
+  if (currentQuestion>0) currentQuestion--;
+  showQuestion(currentQuestion);
+});
+document.getElementById("nextBtn").addEventListener("click",()=>{
+  saveAnswer();
+  if (currentQuestion<questions.length-1) currentQuestion++;
+  showQuestion(currentQuestion);
+});
+document.getElementById("submitBtn").addEventListener("click",()=>{
+  saveAnswer();
+  if (confirm("Are you sure you want to submit?")) submitQuiz();
+});
+
+function saveAnswer() {
+  let selected = document.querySelector("input[name='option']:checked");
+  if (selected) answers[currentQuestion] = parseInt(selected.value);
+}
+
+// Initialize
+showQuestion(currentQuestion);
+timer = setInterval(updateTimer,1000);
+</script>
+</body>
+</html>

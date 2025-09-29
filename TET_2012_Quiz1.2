@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TET Quiz</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  body { font-family: Arial, sans-serif; background:#f0f2f5; }
+  #question-grid button { width: 30px; height: 30px; margin: 2px; color: white; font-weight: bold; border-radius: 4px; border: none; font-size: 12px; }
+  .unanswered { background-color: #dc3545; }
+  .answered { background-color: #28a745; }
+  .marked { background-color: #6f42c1; }
+  .passage-container { max-height: 220px; overflow-y: auto; padding: 10px; background: #f8f9fa; border-radius: 8px; border: 1px solid #ced4da; margin-bottom: 15px; }
+  .timer { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; }
+  .correct { color: green; font-weight: bold; }
+  .wrong { color: red; font-weight: bold; }
+  .progress { height: 20px; margin-bottom: 15px; }
+  #result { position: relative; }
+  #result::before {
+    content: "LOURDS ENGLISH ACADEMY";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-30deg);
+    font-size: 50px;
+    color: rgba(0,0,0,0.1);
+    pointer-events: none;
+    z-index: 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="container my-4">
+  <div id="login" class="card p-4 shadow">
+    <h3 class="mb-3">Enter Candidate Details</h3>
+    <input type="text" id="name" class="form-control mb-2" placeholder="Name" required>
+    <input type="email" id="email" class="form-control mb-2" placeholder="Email" required>
+    <input type="tel" id="phone" class="form-control mb-2" placeholder="Phone Number" required>
+    <select id="subject" class="form-select mb-2" required>
+      <option value="">Select Subject</option>
+      <option>Tamil</option><option>English</option><option>Maths</option><option>Physics</option>
+      <option>Chemistry</option><option>Botony</option><option>Zoology</option><option>History</option><option>Geography</option>
+    </select>
+    <button class="btn btn-primary mt-2" onclick="startQuiz()">Start Quiz</button>
+  </div>
+</div>
+
+<div id="quiz" class="container-fluid" style="display:none;">
+  <div class="row">
+    <div class="col-md-2 bg-white p-3 shadow">
+      <h5 class="text-center mb-3">Questions</h5>
+      <div id="question-grid" class="d-flex flex-wrap justify-content-center"></div>
+      <div class="mt-3 text-center">
+        <span class="fw-bold">Green:</span> Answered<br>
+        <span class="fw-bold">Red:</span> Unanswered<br>
+        <span class="fw-bold">Purple:</span> Marked
+      </div>
+    </div>
+    <div class="col-md-10 p-4">
+      <div class="timer text-end" id="timer">Time Remaining: 30:00</div>
+      <div class="progress mb-3">
+        <div id="timerBar" class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
+      </div>
+      <div id="passage-section" class="passage-container" style="display:none;">
+        <h5>Read the passage carefully:</h5>
+        <p>Most human beings are awake during the day and sleep at night. Owls live the opposite way. Owls are nocturnal. This means that they sleep all day and stay awake at night. Because owls are nocturnal, this means they must eat at night. But finding food in the dark is difficult. To help them, they have special eyes and ears.</p>
+        <p>Owls have very large eyes. These eyes absorb more light than normal. Since there is little light during the night, it is helpful to be able to absorb more of it. This helps owls find food in the dark.</p>
+        <p>Owls also have very good hearing. Even when owls are in the trees, they can hear small animals moving in the grass below. This helps owls catch their prey even when it is very dark.</p>
+        <p>Like owls, mice are also nocturnal animals. Mice have an excellent sense of smell. This helps them find food in the dark.</p>
+        <p>Being nocturnal helps mice to hide from many different animals that want to eat them. Most of the birds, snakes and lizards that like to eat mice sleep at night — except, of course, owls!</p>
+      </div>
+      <div class="card p-3 mb-3 shadow" id="question-area"></div>
+      <div class="mb-4">
+        <button class="btn btn-secondary me-2" onclick="prevQuestion()">Previous</button>
+        <button class="btn btn-secondary me-2" onclick="nextQuestion()">Next</button>
+        <button class="btn btn-warning me-2" onclick="markForReview()">Mark for Review</button>
+        <button class="btn btn-success" onclick="submitQuiz()">Submit Test</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="result" class="container my-4" style="display:none;">
+  <div class="card p-4 shadow">
+    <h3 class="mb-3">Quiz Result</h3>
+    <p id="candidate-details"></p>
+    <p>Total Questions: 30</p>
+    <p>Attempted: <span id="attempted"></span></p>
+    <p>Unattempted: <span id="unattempted"></span></p>
+    <p>Score: <span id="score"></span> / 30</p>
+    <p>Time Taken: <span id="time-taken"></span></p>
+    <div id="answer-review" class="mt-3"></div>
+    <button class="btn btn-info mt-3" onclick="downloadPDF()">Download Result as PDF</button>
+  </div>
+</div>
+
+<script>
+let currentQuestion = 0;
+let selectedAnswers = Array(30).fill(null);
+let markedQuestions = Array(30).fill(false);
+let timerInterval;
+let timeLeft = 1800;
+
+const questions = [
+  {q:"Find the italicized part in the sentence that is incorrect:", stem:"In some countries <em>in Europe</em> teachers <em>are allowed</em> <em>giving</em> children some homework only <em>at weekends</em>.", options:["1","2","3","4"], parts:["in Europe","are allowed","giving","at weekends"]},
+  {q:"Choose the correct form of the verb to complete the sentence:", stem:"When ------------ this morning?", options:["Did you woke up","Did you wake up","Have you woken up","Were you woke up"]},
+  {q:"Choose the correct form of the verb to complete the sentence:", stem:"We ----------- volleyball yesterday", options:["Played","Have played","Had played","Have been playing"]},
+  {q:"Choose the correct word to complete the sentence:", stem:"There is very ---------- petrol in the car. I’ll buy some when I go out", options:["few","much","a little","little"]},
+  {q:"Choose the correct word to complete the sentence:", stem:"He apologized -------------- being late", options:["To","For","On","Of"]},
+  {q:"The word ‘diurnal’ is the opposite of the word nocturnal. Using information in the passage we can understand that an animal that is diurnal", stem:"", options:["sleeps at night and is awake during the day","hunts during the day and is awake at night","sleeps every other night and is awake during the day","hunts at night and sleeps during the day"]},
+  {q:"Based on information in paragraph 2, it can be understood that an animal with small eyes", stem:"", options:["must be diurnal","has trouble seeing in the dark","can see very well at night","must be nocturnal"]},
+  {q:"According to the passage, owls can find food in the dark using their sense of", stem:"", options:["sight only","sight and sound","sight, sound and smell","sight and smell"]},
+  {q:"In paragraph 3 the author writes: ‘This helps owls catch their prey when it is very dark.’ What is prey?", stem:"", options:["A noise that an animal makes during the night","A small animal such as a pet dog or cat","An animal that is hunted by other animals","An enemy"]},
+  {q:"According to the passage, mice sleep during the day in order to", stem:"", options:["find food that other animals cannot","keep themselves safe","store energy for night time activities","stay awake at night"]},
+  {q:"Using information in the last paragraph, it can be understood that", stem:"", options:["owls hunt mice","mice can hide from owls","mice and owls both hide from birds, snakes and lizards","owls sleep at night"]},
+  {q:"Which of the following conclusions would work best at the end of this passage?", stem:"", options:["The owl is a nocturnal animal. This means it is active at night. The owl’s excellent sense of sight and sound enables it to find food in the dark","Mice are nocturnal animals. This means they are active at night. Similar to the owl, mice use their excellent sense of smell to find food in the dark","Some animals are nocturnal. This means they are active at night. The owl and the mouse are good examples of animals that use their senses to find food in the dark","The owl and the mouse sleep during the day and stay awake at night"]},
+  {q:"Choose the right question to get the italicized part as the answer:", stem:"The children are sitting in the garden", options:["Where do children sit?","Where have the children been sitting?","Where are the children sitting?","Where are they sitting?"]},
+  {q:"Find the word that is pronounced differently from the others:", stem:"I. blood II. moon III. soon IV. mood", options:["I – blood","II – moon","III – soon","IV – mood"]},
+  {q:"Find the word that is pronounced differently from the others:", stem:"I. bear II. dare III. fare IV. dear", options:["I – bear","II – dare","III – fare","IV – dear"]},
+  {q:"Find the word that is pronounced differently from the others:", stem:"I. enjoyed II. jumped III. died IV. filled", options:["I – enjoyed","II – jumped","III – died","IV – filled"]},
+  {q:"Find the italicized part in the sentence that is incorrect:", stem:"It is a (well) idea (to encourage) boys (to learn) (to cook).", options:["well","to encourage","to learn","to cook"]},
+  {q:"Choose the word which has almost the same meaning as the italicized one:", stem:"I help them to assemble the different parts", options:["manufacture","store","check","fit"]},
+  {q:"Choose the correct antonym for the italicized word:", stem:"Travelling is considered very dangerous", options:["harmful","peaceful","safe","exciting"]},
+  {q:"Choose the correct antonym for the italicized word:", stem:"This is a common thing", options:["strange","funny","real","special"]},
+  {q:"Read the short conversation and identify the language function:", stem:"Shrimathy: That remark was uncalled for\nVenu: I’m sorry, I shouldn’t have said it", options:["apologising","wishing","blaming","forgiving"]},
+  {q:"Read the short conversation and identify the language function:", stem:"Arun: What shall we do this weekend?\nSheela: Why don’t we go on a picnic?", options:["welcoming","inviting","suggesting","advising"]},
+  {q:"Choose the correct question tag:", stem:"Mary has answered all the questions,----------?", options:["doesn’t she","didn’t she","wasn’t she","hasn’t she"]},
+  {q:"Choose the correct question tag:", stem:"Hanif wasn’t listening --------------------?", options:["was he","has he","did he","isn’t he"]},
+  {q:"Choose the right question to get the italicized part as the answer:", stem:"Hari is writing a letter.", options:["What does Hari write?","What is Hari writing?","Who is writing a letter?","What is Hari doing?"]},
+  {q:"Choose the correct word to complete the sentence:", stem:"We are satisfied ---------- our son’s progress this term", options:["for","on","about","with"]},
+  {q:"Which of the following is a form of the verb ‘be’?", stem:"", options:["may","am","can","will"]},
+  {q:"The passive form of the sentence “The Blue team won the game” is:", stem:"", options:["The game is won by the Blue team","The game has been won by the Blue team","The game had been won by the Blue team","The game was won by the Blue team"]},
+  {q:"The reported form of the question “Renu said to me, ‘Is the movie interesting?’” is:", stem:"", options:["Renu asked me if the movie was interesting","Renu asked me if the movie has been interesting","Renu asked me if the movie is interesting","Renu asked me if the movie had been interesting"]},
+  {q:"Choose the word which has almost the same meaning as the italicized one:", stem:"She seldom goes to conferences", options:["nearly","rarely","slightly","incredibly"]}
+];
+
+const correctAnswers = ["3","b","a","d","b","a","b","b","c","b","b","c","c","I – blood","IV – dear","II – jumped","1","d","c","a","a","c","d","b","d","b","d","b","b","b","b","b"];
+
+function startQuiz(){
+  let name = document.getElementById('name').value.trim();
+  let email = document.getElementById('email').value.trim();
+  let phone = document.getElementById('phone').value.trim();
+  let subject = document.getElementById('subject').value;
+  if(!name || !email || !phone || !subject){ alert("Please fill all details"); return;}
+  window.candidateInfo = {name,email,phone,subject};
+  document.getElementById('login').style.display='none';
+  document.getElementById('quiz').style.display='block';
+  buildQuestionGrid();
+  showQuestion(currentQuestion);
+  startTimer();
+}
+
+function buildQuestionGrid(){
+  let grid = document.getElementById('question-grid');
+  for(let i=0;i<30;i++){
+    let btn = document.createElement('button');
+    btn.id = 'qbtn'+i;
+    btn.innerText = i+1;
+    btn.className = 'unanswered';
+    btn.onclick = ()=>{currentQuestion=i; showQuestion(i);}
+    grid.appendChild(btn);
+  }
+}
+
+function showQuestion(index){
+  let q = questions[index];
+  let html = `<p><b>${q.q}</b></p><p>${q.stem}</p>`;
+  for(let i=0;i<q.options.length;i++){
+    html += `<div><input type="radio" name="option" id="opt${i}" value="${q.options[i]}" ${selectedAnswers[index]===q.options[i]?'checked':''} onclick="selectOption('${q.options[i]}')"> <label for="opt${i}">${q.options[i]}</label></div>`;
+  }
+  document.getElementById('question-area').innerHTML = html;
+}
+
+function selectOption(val){
+  selectedAnswers[currentQuestion] = val;
+  updateGridStatus();
+}
+
+function updateGridStatus(){
+  for(let i=0;i<30;i++){
+    let btn = document.getElementById('qbtn'+i);
+    if(markedQuestions[i]) btn.className='marked';
+    else if(selectedAnswers[i]) btn.className='answered';
+    else btn.className='unanswered';
+  }
+}
+
+function nextQuestion(){ if(currentQuestion<29){ currentQuestion++; showQuestion(currentQuestion);} }
+function prevQuestion(){ if(currentQuestion>0){ currentQuestion--; showQuestion(currentQuestion);} }
+function markForReview(){ markedQuestions[currentQuestion]=true; updateGridStatus(); }
+
+function startTimer(){
+  timerInterval = setInterval(()=>{
+    timeLeft--;
+    let min=Math.floor(timeLeft/60);
+    let sec=timeLeft%60;
+    document.getElementById('timer').innerText=`Time Remaining: ${min}:${sec<10?'0'+sec:sec}`;
+    document.getElementById('timerBar').style.width=(timeLeft/1800*100)+'%';
+    if(timeLeft<=0){ clearInterval(timerInterval); submitQuiz();}
+  },1000);
+}
+
+function submitQuiz(){
+  clearInterval(timerInterval);
+  document.getElementById('quiz').style.display='none';
+  document.getElementById('result').style.display='block';
+  showResult();
+}
+
+function showResult(){
+  let {name,email,phone,subject} = window.candidateInfo;
+  document.getElementById('candidate-details').innerHTML=`Name: ${name} | Email: ${email} | Phone: ${phone} | Subject: ${subject}`;
+  let attempted=selectedAnswers.filter(a=>a!==null).length;
+  document.getElementById('attempted').innerText=attempted;
+  document.getElementById('unattempted').innerText=30-attempted;
+  let score=0;
+  let html="";
+  for(let i=0;i<30;i++){
+    let q=questions[i];
+    let user=selectedAnswers[i];
+    let correct=correctAnswers[i];
+    if(user==correct) score++;
+    html+=`<p><b>Q${i+1}:</b> ${q.stem}<br> Your answer: <span class="${user==correct?'correct':'wrong'}">${user?user:'Not answered'}</span> | Correct: ${correct}</p>`;
+  }
+  document.getElementById('score').innerText=score;
+  document.getElementById('time-taken').innerText=(1800-timeLeft)+" seconds";
+  document.getElementById('answer-review').innerHTML=html;
+}
+
+function downloadPDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.setFontSize(20);
+  doc.text("LOURDS ENGLISH ACADEMY - Quiz Result",10,20);
+  let y=30;
+  doc.setFontSize(12);
+  let details=`Name: ${window.candidateInfo.name}\nEmail: ${window.candidateInfo.email}\nPhone: ${window.candidateInfo.phone}\nSubject: ${window.candidateInfo.subject}\nTotal Questions: 30\nAttempted: ${selectedAnswers.filter(a=>a!==null).length}\nUnattempted: ${30-selectedAnswers.filter(a=>a!==null).length}\nScore: ${document.getElementById('score').innerText} / 30\nTime Taken: ${1800-timeLeft} seconds\n\n`;
+  doc.text(details,10,y);
+  y+=details.split("\n").length*6;
+  for(let i=0;i<30;i++){
+    let q=questions[i];
+    let user=selectedAnswers[i];
+    let correct=correctAnswers[i];
+    let qText=`Q${i+1}: ${q.stem}\nYour answer: ${user?user:'Not answered'} | Correct: ${correct}\n\n`;
+    if(y>270){ doc.addPage(); y=10;}
+    doc.text(qText,10,y);
+    y+=qText.split("\n").length*6;
+  }
+  doc.save("Quiz_Result.pdf");
+}
+</script>
+
+</body>
+</html>
