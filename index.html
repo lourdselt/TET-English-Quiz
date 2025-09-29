@@ -653,20 +653,22 @@ function sendToGoogleSheet() {
 
   console.log("Sending payload:", payload);
 
-  fetch("https://script.google.com/macros/s/AKfycbyCIF0KcmXBrIMiam0rDzsZB61TzJCvWodzoea5PrJuTgceiif46_oDq4tJRMKypbH3-w/exec", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  })
-  .then(res => res.text())
-  .then(txt => {
-    console.log("Sheet response:", txt);
-    document.getElementById("submission-status").innerText = "✅ Your response has been recorded and saved.";
-  })
-  .catch(err => {
-    console.error("Error sending to sheet:", err);
-    document.getElementById("submission-status").innerText = "⚠️ There was an error saving your response.";
-  });
+ fetch("https://script.google.com/macros/s/AKfycbzMafiozr8HXFsafF3VgF7N_5PdCYkD24kQCv00s5u4bOqcJ40kqrn5Wxo4BzREcSWpMA/exec", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(payload),
+  mode: "no-cors"   // 👈 add this
+})
+.then(res => res.text())
+.then(txt => {
+  console.log("Sheet response:", txt);
+  document.getElementById("submission-status").innerText = "✅ Your response has been recorded.";
+})
+.catch(err => {
+  console.error("Error sending to sheet:", err);
+  document.getElementById("submission-status").innerText = "⚠️ Error saving response.";
+});
+ 
 }
 </script>
 
