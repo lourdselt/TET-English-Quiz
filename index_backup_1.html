@@ -26,9 +26,7 @@ function sendToGoogleSheet() {
     answers: selectedAnswers
   };
 
-  
-  console.log("Sending payload:", payload);
-fetch("https://script.google.com/macros/s/AKfycbyCIF0KcmXBrIMiam0rDzsZB61TzJCvWodzoea5PrJuTgceiif46_oDq4tJRMKypbH3-w/exec", {
+  fetch("https://script.google.com/macros/s/AKfycbyCIF0KcmXBrIMiam0rDzsZB61TzJCvWodzoea5PrJuTgceiif46_oDq4tJRMKypbH3-w/exec", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
@@ -249,7 +247,7 @@ const correctAnswers = [
   "strange", // Q20: a
   "apologising", // Q21: a
   "suggesting", // Q22: c
-  "hasn’t she", // Q23: d
+  "hasn't she", // Q23: d
   "was he", // Q24: a
   "What is Hari writing?", // Q25: b
   "with", // Q26: d
@@ -286,14 +284,6 @@ function buildQuestionGrid(){
 }
 
 function showQuestion(index){
-
-  // Show passage only for Q6–Q12 (index 5–11)
-  if (index >= 5 && index <= 11) {
-    document.getElementById('passage-section').style.display = 'block';
-  } else {
-    document.getElementById('passage-section').style.display = 'none';
-  }
-
   let q = questions[index];
   let html = `<div><b>Q${index+1}. ${q.q}</b></div>`;
   if (q.stem && (index === 20 || index === 21)) {
@@ -346,44 +336,6 @@ function submitQuiz(){
   showResult();
   sendToGoogleSheet();
 }
-
-function sendToGoogleSheet() {
-  const { name, email, phone, subject } = window.candidateInfo;
-  const attempted = selectedAnswers.filter(a => a !== null).length;
-  const unattempted = 30 - attempted;
-  const score = document.getElementById('score').innerText;
-  const timeTaken = (1800 - timeLeft) + " seconds";
-
-  const payload = {
-    name,
-    email,
-    phone,
-    subject,
-    attempted,
-    unattempted,
-    score,
-    timeTaken,
-    answers: selectedAnswers
-  };
-
-  console.log("Sending payload:", payload);
-
-  fetch("https://script.google.com/macros/s/AKfycbyCIF0KcmXBrIMiam0rDzsZB61TzJCvWodzoea5PrJuTgceiif46_oDq4tJRMKypbH3-w/exec", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  })
-  .then(res => res.text())
-  .then(txt => {
-    console.log("Sheet response:", txt);
-    document.getElementById("submission-status").innerText = "✅ Your response has been recorded and saved.";
-  })
-  .catch(err => {
-    console.error("Error sending to sheet:", err);
-    document.getElementById("submission-status").innerText = "⚠️ There was an error saving your response.";
-  });
-}
-
 
 function showResult(){
   let {name,email,phone,subject} = window.candidateInfo;
@@ -628,46 +580,6 @@ function downloadPDF(){
     })
     .catch(err => { console.warn('Could not load logo base64:', err); });
 })();
-</script>
-
-
-<script>
-function sendToGoogleSheet() {
-  const { name, email, phone, subject } = window.candidateInfo;
-  const attempted = selectedAnswers.filter(a => a !== null).length;
-  const unattempted = 30 - attempted;
-  const score = document.getElementById('score').innerText;
-  const timeTaken = (1800 - timeLeft) + " seconds";
-
-  const payload = {
-    name,
-    email,
-    phone,
-    subject,
-    attempted,
-    unattempted,
-    score,
-    timeTaken,
-    answers: selectedAnswers
-  };
-
-  console.log("Sending payload:", payload);
-
-  fetch("https://script.google.com/macros/s/AKfycbyCIF0KcmXBrIMiam0rDzsZB61TzJCvWodzoea5PrJuTgceiif46_oDq4tJRMKypbH3-w/exec", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  })
-  .then(res => res.text())
-  .then(txt => {
-    console.log("Sheet response:", txt);
-    document.getElementById("submission-status").innerText = "✅ Your response has been recorded and saved.";
-  })
-  .catch(err => {
-    console.error("Error sending to sheet:", err);
-    document.getElementById("submission-status").innerText = "⚠️ There was an error saving your response.";
-  });
-}
 </script>
 
 </body>
