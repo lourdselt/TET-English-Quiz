@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TET Quiz</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
+function sendToGoogleSheet() {
+  const { name, email, phone, subject } = window.candidateInfo;
+  const attempted = selectedAnswers.filter(a => a !== null).length;
+  const unattempted = 30 - attempted;
+  const score = document.getElementById('score').innerText;
+  const timeTaken = (1800 - timeLeft) + " seconds";
+
+  const payload = {
+    name,
+    email,
+    phone,
+    subject,
+    attempted,
+    unattempted,
+    score,
+    timeTaken,
+    answers: selectedAnswers
+  };
+
+  fetch("https://script.google.com/macros/s/AKfycbyCIF0KcmXBrIMiam0rDzsZB61TzJCvWodzoea5PrJuTgceiif46_oDq4tJRMKypbH3-w/exec", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  })
+  .then(res => res.text())
+  .then(txt => console.log("Sheet response:", txt))
+  .catch(err => console.error("Error sending to sheet:", err));
+}
+
+</script>
+<style>
+  em {
+    font-family: 'Roboto', Arial, sans-serif;
+    font-style: italic;
+    font-weight: bold;
+    font-size: 1.05em;
+    color: #2a2a2a;
+  }
+  .blank {
+    display: inline-block;
+    border-bottom: 1px solid #333;
+    min-width: 60px;
+    height: 1.2em;
+    vertical-align: middle;
+    margin: 0 4px;
+  }
+  body, #quiz, #question-area, .option-div, .timer {
+    font-family: 'Roboto', Arial, sans-serif;
+    background:#f0f2f5;
+  }
+  #question-grid button { width: 30px; height: 30px; margin: 2px; color: white; font-weight: bold; border-radius: 4px; border: none; font-size: 12px; }
+  .unanswered { background-color: #dc3545; }
+  .answered { background-color: #28a745; }
+  .marked { background-color: #6f42c1; }
+  .passage-container { max-height: 220px; overflow-y: auto; padding: 10px; background: #f8f9fa; border-radius: 8px; border: 1px solid #ced4da; margin-bottom: 15px; }
+  .timer { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; }
+  .correct { color: green; font-weight: bold; }
+  .wrong { color: red; font-weight: bold; }
+  .progress { height: 20px; margin-bottom: 15px; }
+  .option-div {
+    margin: 0 0 0 8px;
+    padding: 0;
+    line-height: 1.2;
+    display: flex;
+    align-items: center;
+  }
+  .option-div label { display: inline; margin-left: 6px; }
+  #result { position: relative; }
+  /* Use a real image watermark instead of pseudo-element text */
+  #result .card { position: relative; z-index: 1; }
+  .logo-watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-30deg);
+    width: 300px; /* adjust as needed */
+    opacity: 0.08;
+    pointer-events: none;
+    z-index: 0;
+    display: none;
+  }
+
+  /* Fixed site header to show brand and test name across all pages */
+  .site-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: #fff;
+    border-bottom: 1px solid #e6e6e6;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    z-index: 1100;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  }
+  .site-header .brand { font-weight: 700; font-size: 1.05rem; color: #222; }
+  .site-header .testname { font-size: 0.95rem; color: #555; }
+  /* Ensure page content is not hidden behind fixed header */
+  body { padding-top: 72px; }
+</style>
+</head>
+<body>
+  <!-- Fixed header visible on every page -->
+  <header class="site-header" role="banner" aria-label="Site header">
+    <div class="brand">LOURDS ENGLISH ACADEMY</div>
+    <div id="test-name" class="testname"></div>
+  </header>
+
+<div class="container my-4">
+  <div id="login" class="card p-4 shadow">
+    <h3 class="mb-3">Enter Candidate Details</h3>
+    <input type="text" id="name" class="form-control mb-2" placeholder="Name" required>
+    <input type="email" id="email" class="form-control mb-2" placeholder="Email" required>
+    <input type="tel" id="phone" class="form-control mb-2" placeholder="Phone Number" required>
+    <select id="subject" class="form-select mb-2" required>
+      <option value="">Select Subject</option>
+      <option>Tamil</option><option>English</option><option>Maths</option><option>Physics</option>
+      <option>Chemistry</option><option>Botony</option><option>Zoology</option><option>History</option><option>Geography</option>
+    </select>
+    <button class="btn btn-primary mt-2" onclick="startQuiz()">Start Quiz</button>
+  </div>
+</div>
+
+<div id="quiz" class="container-fluid" style="display:none;">
+  <div class="row">
+    <div class="col-md-2 bg-white p-3 shadow">
+      <h5 class="text-center mb-3">Questions</h5>
+      <div id="question-grid" class="d-flex flex-wrap justify-content-center"></div>
+      <div class="mt-3 text-center">
+        <span class="fw-bold">Green:</span> Answered<br>
+        <span class="fw-bold">Red:</span> Unanswered<br>
+        <span class="fw-bold">Purple:</span> Marked
+      </div>
+    </div>
+    <div class="col-md-10 p-4">
+      <div class="timer text-end" id="timer">Time Remaining: 30:00</div>
+      <div class="progress mb-3">
+        <div id="timerBar" class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
+      </div>
+      <div id="passage-section" class="passage-container" style="display:none;">
+        <h5>Read the passage carefully:</h5>
+        <p>Most human beings are awake during the day and sleep at night. Owls live the opposite way. Owls are nocturnal. This means that they sleep all day and stay awake at night. Because owls are nocturnal, this means they must eat at night. But finding food in the dark is difficult. To help them, they have special eyes and ears.</p>
+        <p>Owls have very large eyes. These eyes absorb more light than normal. Since there is little light during the night, it is helpful to be able to absorb more of it. This helps owls find food in the dark.</p>
+        <p>Owls also have very good hearing. Even when owls are in the trees, they can hear small animals moving in the grass below. This helps owls catch their prey even when it is very dark.</p>
+        <p>Like owls, mice are also nocturnal animals. Mice have an excellent sense of smell. This helps them find food in the dark.</p>
+        <p>Being nocturnal helps mice to hide from many different animals that want to eat them. Most of the birds, snakes and lizards that like to eat mice sleep at night — except, of course, owls!</p>
+      </div>
+      <div class="card p-3 mb-3 shadow" id="question-area"></div>
+      <div class="mb-4">
+        <button class="btn btn-secondary me-2" onclick="prevQuestion()">Previous</button>
+        <button class="btn btn-secondary me-2" onclick="nextQuestion()">Next</button>
+        <button class="btn btn-warning me-2" onclick="markForReview()">Mark for Review</button>
+        <button class="btn btn-success" onclick="submitQuiz()">Submit Test</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="result" class="container my-4" style="display:none;">
+  <div class="card p-4 shadow">
+    <!-- watermark image (will be set from lourds_logo_base64.txt at runtime) -->
+    <img id="logo-watermark" class="logo-watermark" alt="watermark logo">
+    <h3 class="mb-3">Quiz Result</h3>
+    <p id="candidate-details"></p>
+    <p>Total Questions: 30</p>
+    <p>Attempted: <span id="attempted"></span></p>
+    <p>Unattempted: <span id="unattempted"></span></p>
+    <p>Score: <span id="score"></span> / 30</p>
+    <p>Time Taken: <span id="time-taken"></span></p>
+    <div id="answer-review" class="mt-3"></div>
+    <button class="btn btn-info mt-3" onclick="downloadPDF()">Download Result as PDF</button>
+  </div>
+</div>
+
+<script>
+let currentQuestion = 0;
+let selectedAnswers = Array(30).fill(null);
+let markedQuestions = Array(30).fill(false);
+let timerInterval;
+let timeLeft = 1800;
+
+const questions = [
+  {q:"Find the italicized part in the sentence that is incorrect:", stem:`<table style="border-collapse:collapse;width:auto"><tr style="vertical-align:bottom;font-size:1em"><td style="padding:0 2px">In some countries</td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>in Europe</em></span></td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>are allowed</em></span></td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>giving</em></span></td><td style="padding:0 2px">children some homework only</td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>at weekends</em></span></td><td style="padding:0 2px">.</td></tr><tr style="font-size:0.95em"><td></td><td style="text-align:center">1</td><td style="text-align:center">2</td><td style="text-align:center">3</td><td></td><td style="text-align:center">4</td><td></td></tr></table>`, options:["1","2","3","4"], parts:["in Europe","are allowed","giving","at weekends"]},
+  {q:"Choose the correct form of the verb to complete the sentence:", stem:"When <span class='blank'></span> this morning?", options:["did you woke up","did you wake up","have you woken up","were you woke up"]},
+  {q:"Choose the correct form of the verb to complete the sentence:", stem:"We <span class='blank'></span> volleyball yesterday.", options:["played","have played","had played","have been playing"]},
+  {q:"Choose the correct word to complete the sentence:", stem:"There is very <span class='blank'></span> petrol in the car. I’ll buy some when I go out.", options:["few","much","a little","little"]},
+  {q:"Choose the correct word to complete the sentence:", stem:"He apologized <span class='blank'></span> being late.", options:["to","for","on","of"]},
+  {q:"The word ‘diurnal’ is the opposite of the word nocturnal. Using information in the passage we can understand that an animal that is diurnal", stem:"", options:["sleeps at night and is awake during the day.","hunts during the day and is awake at night.","sleeps every other night and is awake during the day.","hunts at night and sleeps during the day."]},
+  {q:"Based on information in paragraph 2, it can be understood that an animal with small eyes", stem:"", options:["must be diurnal.","has trouble seeing in the dark.","can see very well at night.","must be nocturnal."]},
+  {q:"According to the passage, owls can find food in the dark using their sense of", stem:"", options:["sight only.","sight and sound.","sight, sound and smell.","sight and smell."]},
+  {q:"In paragraph 3 the author writes: ‘This helps owls catch their prey when it is very dark.’ What is prey?", stem:"", options:["A noise that an animal makes during the night.","A small animal such as a pet dog or cat.","An animal that is hunted by other animals.","An enemy."]},
+  {q:"According to the passage, mice sleep during the day in order to", stem:"", options:["find food that other animals cannot.","keep themselves safe.","store energy for night time activities.","stay awake at night."]},
+  {q:"Using information in the last paragraph, it can be understood that", stem:"", options:["owls hunt mice.","mice can hide from owls.","mice and owls both hide from birds, snakes and lizards.","owls sleep at night."]},
+  {q:"Which of the following conclusions would work best at the end of this passage?", stem:"", options:["The owl is a nocturnal animal. This means it is active at night. The owl’s excellent sense of sight and sound enables it to find food in the dark.","Mice are nocturnal animals. This means they are active at night. Similar to the owl, mice use their excellent sense of smell to find food in the dark.","Some animals are nocturnal. This means they are active at night. The owl and the mouse are good examples of animals that use their senses to find food in the dark.","The owl and the mouse sleep during the day and stay awake at night."]},
+  {q:"Choose the right question to get the italicized part as the answer:", stem:"The children are sitting in the garden.", options:["Where do children sit?","Where have the children been sitting?","Where are the children sitting?","Where are they sitting?"]},
+  {q:"Find the word that is pronounced differently from the others:", stem:"I. blood II. moon III. soon IV. mood", options:["I – blood","II – moon","III – soon","IV – mood"]},
+  {q:"Find the word that is pronounced differently from the others:", stem:"I. bear II. dare III. fare IV. dear", options:["I – bear","II – dare","III – fare","IV – dear"]},
+  {q:"Find the word that is pronounced differently from the others:", stem:"I. enjoyed II. jumped III. died IV. filled", options:["I – enjoyed","II – jumped","III – died","IV – filled"]},
+  {q:"Find the italicized part in the sentence that is incorrect:", stem:`<table style="border-collapse:collapse;width:auto"><tr style="vertical-align:bottom;font-size:1em"><td style="padding:0 2px">It is a</td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>well</em></span></td><td style="padding:0 2px">idea</td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>to encourage</em></span></td><td style="padding:0 2px">boys</td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>to learn</em></span></td><td style="padding:0 2px"> </td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>to cook</em></span></td><td style="padding:0 2px">.</td></tr><tr style="font-size:0.95em"><td></td><td style="text-align:center">1</td><td></td><td style="text-align:center">2</td><td></td><td style="text-align:center">3</td><td></td><td style="text-align:center">4</td><td></td></tr></table>`, options:["1","2","3","4"]},
+  {q:"Choose the word which has almost the same meaning as the italicized one:", stem:"I help them to <em>assemble</em> the different parts.", options:["manufacture","store","check","fit"]},
+  {q:"Choose the correct antonym for the italicized word:", stem:"Travelling is considered very <em>dangerous</em>.", options:["harmful","peaceful","safe","exciting"]},
+  {q:"Choose the correct antonym for the italicized word:", stem:"This is a <em>common</em> thing.", options:["strange","funny","real","special"]},
+  {q:"Read the short conversation and identify the language function:", stem:"Shrimathy: That remark was uncalled for.\nVenu: <em>I’m sorry, I shouldn’t have said it.</em>", options:["apologising","wishing","blaming","forgiving"]},
+  {q:"Read the short conversation and identify the language function:", stem:"Arun: What shall we do this weekend?\nSheela: <em>Why don’t we go on a picnic?</em>", options:["welcoming","inviting","suggesting","advising"]},
+  {q:"Choose the correct question tag:", stem:"Mary has answered all the questions,<span class='blank'></span>?", options:["doesn’t she","didn’t she","wasn’t she","hasn’t she"]},
+  {q:"Choose the correct question tag:", stem:"Hanif wasn’t listening <span class='blank'></span>?", options:["was he","has he","did he","isn’t he"]},
+  {q:"Choose the right question to get the italicized part as the answer:", stem:"Hari is writing a letter.", options:["What does Hari write?","What is Hari writing?","Who is writing a letter?","What is Hari doing?"]},
+  {q:"Choose the correct word to complete the sentence:", stem:"We are satisfied <span class='blank'></span> our son’s progress this term.", options:["for","on","about","with"]},
+  {q:"Which of the following is a form of the verb ‘be’?", stem:"", options:["may","am","can","will"]},
+  {q:"The passive form of the sentence “The Blue team won the game” is:", stem:"", options:["The game is won by the Blue team.","The game has been won by the Blue team.","The game had been won by the Blue team.","The game was won by the Blue team."]},
+  {q:"The reported form of the question “Renu said to me, ‘Is the movie interesting?’” is:", stem:"", options:["Renu asked me if the movie was interesting.","Renu asked me if the movie has been interesting.","Renu asked me if the movie is interesting.","Renu asked me if the movie had been interesting."]},
+  {q:"Choose the word which has almost the same meaning as the italicized one:", stem:"She <em>seldom</em> goes to conferences", options:["nearly","rarely","slightly","incredibly"]}
+];
+
+const correctAnswers = [
+  "3", // Q1: option 3 ("giving")
+  "did you wake up", // Q2: b
+  "played", // Q3: a
+  "little", // Q4: d
+  "for", // Q5: b
+  "sleeps at night and is awake during the day.", // Q6: a
+  "can see very well at night.", // Q7: b
+  "sight and sound.", // Q8: b
+  "An animal that is hunted by other animals.", // Q9: c
+  "stay awake at night.", // Q10: b
+  "mice can hide from owls.", // Q11: b
+  "Some animals are nocturnal. This means they are active at night. The owl and the mouse are good examples of animals that use their senses to find food in the dark.", // Q12: c
+  "Where are the children sitting?", // Q13: c
+  "I – blood", // Q14: a
+  "IV – dear", // Q15: d
+  "II – jumped", // Q16: b
+  "1", // Q17: a
+  "fit", // Q18: d
+  "safe", // Q19: c
+  "strange", // Q20: a
+  "apologising", // Q21: a
+  "suggesting", // Q22: c
+  "hasn’t she", // Q23: d
+  "was he", // Q24: a
+  "What is Hari writing?", // Q25: b
+  "with", // Q26: d
+  "am", // Q27: b
+  "The game was won by the Blue team.", // Q28: d
+  "Renu asked me if the movie was interesting.", // Q29: a
+  "rarely" // Q30: b
+];
+
+function startQuiz(){
+  let name = document.getElementById('name').value.trim();
+  let email = document.getElementById('email').value.trim();
+  let phone = document.getElementById('phone').value.trim();
+  let subject = document.getElementById('subject').value;
+  if(!name || !email || !phone || !subject){ alert("Please fill all details"); return;}
+  window.candidateInfo = {name,email,phone,subject};
+  document.getElementById('login').style.display='none';
+  document.getElementById('quiz').style.display='block';
+  buildQuestionGrid();
+  showQuestion(currentQuestion);
+  startTimer();
+}
+
+function buildQuestionGrid(){
+  let grid = document.getElementById('question-grid');
+  for(let i=0;i<30;i++){
+    let btn = document.createElement('button');
+    btn.id = 'qbtn'+i;
+    btn.innerText = i+1;
+    btn.className = 'unanswered';
+    btn.onclick = ()=>{currentQuestion=i; showQuestion(i);}
+    grid.appendChild(btn);
+  }
+}
+
+function showQuestion(index){
+
+  // Show passage only for Q6–Q12 (index 5–11)
+  if (index >= 5 && index <= 11) {
+    document.getElementById('passage-section').style.display = 'block';
+  } else {
+    document.getElementById('passage-section').style.display = 'none';
+  }
+
+  let q = questions[index];
+  let html = `<div><b>Q${index+1}. ${q.q}</b></div>`;
+  if (q.stem && (index === 20 || index === 21)) {
+    // For Q21 and Q22, split stem by \n and render as a single block with <br>
+    const lines = q.stem.split('\n');
+    html += `<div>${lines.map(line => line.trim()).join('<br>')}</div>`;
+  } else {
+    html += `<div>${q.stem}</div>`;
+  }
+  const optionCodes = ['a)', 'b)', 'c)', 'd)'];
+  for(let i=0;i<q.options.length;i++){
+    html += `<div class="option-div"><input type="radio" name="option" id="opt${i}" value="${q.options[i]}" ${selectedAnswers[index]===q.options[i]?'checked':''} onclick="selectOption('${q.options[i]}')"> <label for="opt${i}">${optionCodes[i] ? optionCodes[i] : String.fromCharCode(97+i)+')'} ${q.options[i]}</label></div>`;
+  }
+  document.getElementById('question-area').innerHTML = html;
+}
+
+function selectOption(val){
+  selectedAnswers[currentQuestion] = val;
+  updateGridStatus();
+}
+
+function updateGridStatus(){
+  for(let i=0;i<30;i++){
+    let btn = document.getElementById('qbtn'+i);
+    if(markedQuestions[i]) btn.className='marked';
+    else if(selectedAnswers[i]) btn.className='answered';
+    else btn.className='unanswered';
+  }
+}
+
+function nextQuestion(){ if(currentQuestion<29){ currentQuestion++; showQuestion(currentQuestion);} }
+function prevQuestion(){ if(currentQuestion>0){ currentQuestion--; showQuestion(currentQuestion);} }
+function markForReview(){ markedQuestions[currentQuestion]=true; updateGridStatus(); }
+
+function startTimer(){
+  timerInterval = setInterval(()=>{
+    timeLeft--;
+    let min=Math.floor(timeLeft/60);
+    let sec=timeLeft%60;
+    document.getElementById('timer').innerText=`Time Remaining: ${min}:${sec<10?'0'+sec:sec}`;
+    document.getElementById('timerBar').style.width=(timeLeft/1800*100)+'%';
+    if(timeLeft<=0){ clearInterval(timerInterval); submitQuiz();}
+  },1000);
+}
+
+function submitQuiz(){
+  clearInterval(timerInterval);
+  document.getElementById('quiz').style.display='none';
+  document.getElementById('result').style.display='block';
+  showResult();
+  sendToGoogleSheet();
+}
+
+function showResult(){
+  let {name,email,phone,subject} = window.candidateInfo;
+  document.getElementById('candidate-details').innerHTML=`Name: ${name} | Email: ${email} | Phone: ${phone} | Subject: ${subject}`;
+  let attempted=selectedAnswers.filter(a=>a!==null).length;
+  document.getElementById('attempted').innerText=attempted;
+  document.getElementById('unattempted').innerText=30-attempted;
+  let score=0;
+  let html="";
+  for(let i=0;i<30;i++){
+    let q=questions[i];
+    let user=selectedAnswers[i];
+    let correct=correctAnswers[i];
+    if(user==correct) score++;
+    html+=`<p><b>Q${i+1}:</b> ${q.stem}<br> Your answer: <span class="${user==correct?'correct':'wrong'}">${user?user:'Not answered'}</span> | Correct: ${correct}</p>`;
+  }
+  document.getElementById('score').innerText=score;
+  document.getElementById('time-taken').innerText=(1800-timeLeft)+" seconds";
+  document.getElementById('answer-review').innerHTML=html;
+}
+
+function downloadPDF(){
+  const { jsPDF } = window.jspdf;
+  // Use A4 size explicitly for alignment
+  const doc = new jsPDF({format: 'a4', unit: 'mm'});
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  // Watermark: Bookman Old Style (simulate with Times Bold), two centered per page
+  // Draw one big watermark, diagonal, centered
+  // Draw one big watermark, diagonal, fully across page, centered
+  // Draw logo watermark in center
+  function drawLogoWatermark() {
+    // Use loaded base64 logo if available
+    if(window.logoBase64){
+      var img = 'data:image/png;base64,' + window.logoBase64;
+      doc.addImage(img, 'PNG', pageWidth/2-30, pageHeight/2-30, 60, 60, undefined, 'NONE');
+    }
+  }
+  drawLogoWatermark();
+  // All other text in Roboto
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(14);
+  doc.setFont(undefined, 'bold');
+  doc.text("LOURDS ENGLISH ACADEMY", pageWidth/2, 16, {align: "center"});
+  doc.setFontSize(12);
+  doc.text(document.title || "Test Name", pageWidth/2, 22, {align: "center"});
+  doc.setFont(undefined, 'normal');
+  let y=28;
+  // Candidate details 4-column, 2-row table
+  let detailsHeaders = ["Name", "Email", "Phone Number", "Subject"];
+  let detailsValues = [window.candidateInfo.name, window.candidateInfo.email, window.candidateInfo.phone, window.candidateInfo.subject];
+  let cellW = (pageWidth-20)/4;
+  // Header row (light grey, black text)
+  for(let i=0;i<4;i++){
+    doc.setFillColor(230);
+    doc.setDrawColor(0);
+    doc.setTextColor(0);
+    doc.rect(10+cellW*i, y, cellW, 8, 'F');
+    doc.text(detailsHeaders[i], 12+cellW*i, y+6);
+  }
+  y+=8;
+  // Value row
+  for(let i=0;i<4;i++){
+    doc.setFillColor(255);
+    doc.setDrawColor(0);
+    doc.setTextColor(0);
+    doc.rect(10+cellW*i, y, cellW, 8, 'F');
+    doc.text(detailsValues[i], 12+cellW*i, y+6);
+  }
+  y+=10;
+  // Stats table 5 columns, 2 rows
+  let statsHeaders = ["Total Questions", "Attempted", "Unattempted", "Score", "Time Taken"];
+  let statsValues = [
+    "30",
+    `${selectedAnswers.filter(a=>a!==null).length}`,
+    `${30-selectedAnswers.filter(a=>a!==null).length}`,
+    `${document.getElementById('score').innerText} / 30`,
+    `${1800-timeLeft} seconds`
+  ];
+  let statW = (pageWidth-20)/5;
+  // Draw stats table with centered header and values, each cell bordered
+  // Header row
+  for(let i=0;i<5;i++){
+    doc.setFillColor(230);
+    doc.setDrawColor(0);
+    doc.setTextColor(0);
+    doc.rect(10+statW*i, y, statW, 8, 'FD');
+    doc.text(statsHeaders[i], 10+statW*i+statW/2, y+6, {align: "center"});
+  }
+  y+=8;
+  // Value row
+  for(let i=0;i<5;i++){
+    doc.setFillColor(255);
+    doc.setDrawColor(0);
+    doc.setTextColor(0);
+    doc.rect(10+statW*i, y, statW, 8, 'FD');
+    doc.text(statsValues[i], 10+statW*i+statW/2, y+6, {align: "center"});
+  }
+  y+=8;
+  y+=4;
+  // Helper to strip HTML
+  function stripHTML(html) {
+    var tmp = document.createElement("DIV");
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || "";
+  }
+  // Results table header (3 columns, black border, light grey fill)
+  let resW = [(pageWidth-20)*0.12, (pageWidth-20)*0.44, (pageWidth-20)*0.44];
+  doc.setFillColor(230);
+  doc.setDrawColor(0);
+  doc.setTextColor(0);
+  doc.rect(10, y, resW[0], 10, 'FD');
+  doc.rect(10+resW[0], y, resW[1], 10, 'FD');
+  doc.rect(10+resW[0]+resW[1], y, resW[2], 10, 'FD');
+  doc.setFont(undefined, 'bold');
+  doc.text("Q.No.", 12, y+7);
+  doc.text("Correct Answer", 12+resW[0], y+7);
+  doc.text("Your Answer", 12+resW[0]+resW[1], y+7);
+  doc.setFont(undefined, 'normal');
+  y+=10;
+  // Results table 30 rows, auto-adjust height for wrapped text
+  for(let i=0;i<30;i++){
+    let q=questions[i];
+    let user=selectedAnswers[i];
+    let correct=correctAnswers[i];
+    let correctText = stripHTML(correct);
+    let userText = stripHTML(user ? user : 'Not answered');
+    let correctLines = doc.splitTextToSize(correctText, resW[1]-4);
+    let userLines = doc.splitTextToSize(userText, resW[2]-4);
+    let rowHeight = Math.max(correctLines.length, userLines.length, 1)*6+2;
+    // Draw row
+    doc.rect(10, y, resW[0], rowHeight);
+    doc.rect(10+resW[0], y, resW[1], rowHeight);
+    doc.rect(10+resW[0]+resW[1], y, resW[2], rowHeight);
+    doc.text(`${i+1}`, 12, y+7);
+    doc.text(correctLines, 12+resW[0], y+7);
+    if(user==correct){
+      doc.setTextColor(0,128,0);
+    }else{
+      doc.setTextColor(220,0,0);
+    }
+    doc.text(userLines, 12+resW[0]+resW[1], y+7);
+    doc.setTextColor(0);
+    y+=rowHeight;
+    if(y>pageHeight-30){
+      doc.addPage();
+      // ensure watermark on new page as well
+      drawLogoWatermark();
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text("LOURDS ENGLISH ACADEMY", pageWidth/2, 16, {align: "center"});
+      doc.setFontSize(12);
+      doc.text(document.title || "Test Name", pageWidth/2, 22, {align: "center"});
+      doc.setFont(undefined, 'normal');
+      y=28;
+      // Candidate details table
+      for(let i=0;i<4;i++){
+        doc.setFillColor(230);
+        doc.setDrawColor(0);
+        doc.setTextColor(0);
+        doc.rect(10+cellW*i, y, cellW, 8, 'F');
+        doc.text(detailsHeaders[i], 12+cellW*i, y+6);
+      }
+      y+=8;
+      for(let i=0;i<4;i++){
+        doc.setFillColor(255);
+        doc.setDrawColor(0);
+        doc.setTextColor(0);
+        doc.rect(10+cellW*i, y, cellW, 8, 'F');
+        doc.text(detailsValues[i], 12+cellW*i, y+6);
+      }
+      y+=10;
+      for(let i=0;i<5;i++){
+        doc.setFillColor(230);
+        doc.setDrawColor(0);
+        doc.setTextColor(0);
+        doc.rect(10+statW*i, y, statW, 8, 'F');
+        doc.text(statsHeaders[i], 12+statW*i, y+6);
+      }
+      y+=8;
+      for(let i=0;i<5;i++){
+        doc.setFillColor(255);
+        doc.setDrawColor(0);
+        doc.setTextColor(0);
+        doc.rect(10+statW*i, y, statW, 8, 'F');
+        doc.text(statsValues[i], 12+statW*i, y+6);
+      }
+      y+=12;
+      // Results table header
+      doc.setFillColor(230);
+      doc.setDrawColor(0);
+      doc.setTextColor(0);
+      doc.rect(10, y, resW[0], 10, 'FD');
+      doc.rect(10+resW[0], y, resW[1], 10, 'FD');
+      doc.rect(10+resW[0]+resW[1], y, resW[2], 10, 'FD');
+      doc.setFont(undefined, 'bold');
+      doc.text("Q.No.", 12, y+7);
+      doc.text("Correct Answer", 12+resW[0], y+7);
+      doc.text("Your Answer", 12+resW[0]+resW[1], y+7);
+      doc.setFont(undefined, 'normal');
+      y+=10;
+    }
+  }
+  // Footer: page number (left), timestamp (right)
+  let pageCount = doc.internal.getNumberOfPages();
+  for(let i=1;i<=pageCount;i++){
+    doc.setPage(i);
+    doc.setFontSize(10);
+    doc.text(`Page ${i}`, 10, pageHeight-2);
+    let now = new Date();
+    let ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    doc.text(ts, pageWidth-50, pageHeight-2);
+  }
+  doc.save("Quiz_Result.pdf");
+}
+
+// Set test name in header (use document.title, fallback to filename)
+(function(){
+  try {
+    var tn = document.title && document.title.trim() ? document.title.trim() : (location.pathname.split('/').pop() || '');
+    // remove extension if present
+    tn = tn.replace(/\.[^.]+$/, '');
+    document.getElementById('test-name').innerText = tn ? ('- ' + tn) : '';
+  } catch(e) { /* silent */ }
+})();
+
+// Load base64 logo file (lourds_logo_base64.txt) from same folder and apply it as watermark.
+(function(){
+  fetch('lourds_logo_base64.txt')
+    .then(res => res.text())
+    .then(text => {
+      const b64 = text.trim();
+      if(!b64) return;
+      // strip any leading data: URI prefix if present
+      window.logoBase64 = b64.replace(/^data:image\/[a-z]+;base64,/, '');
+      const imgEl = document.getElementById('logo-watermark');
+      if(imgEl){
+        imgEl.src = 'data:image/png;base64,' + window.logoBase64;
+        imgEl.style.display = 'block';
+      }
+    })
+    .catch(err => { console.warn('Could not load logo base64:', err); });
+})();
+</script>
+
+</body>
+</html>
