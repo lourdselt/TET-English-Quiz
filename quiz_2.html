@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TET Quiz</title>
+<title>TET Quiz 2</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
@@ -15,7 +15,7 @@ function sendToGoogleSheet() {
   const timeTaken = (1800 - timeLeft) + " seconds";
 
   const payload = {
-    quizName: "Test1",
+    quizName: "Test2",
     name,
     email,
     phone,
@@ -29,7 +29,7 @@ function sendToGoogleSheet() {
 
   
   console.log("Sending payload:", payload);
-fetch("https://script.google.com/macros/s/AKfycbzMafiozr8HXFsafF3VgF7N_5PdCYkD24kQCv00s5u4bOqcJ40kqrn5Wxo4BzREcSWpMA/exec", {
+fetch("https://script.google.com/macros/s/AKfycbyCIF0KcmXBrIMiam0rDzsZB61TzJCvWodzoea5PrJuTgceiif46_oDq4tJRMKypbH3-w/exec", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
@@ -154,11 +154,11 @@ fetch("https://script.google.com/macros/s/AKfycbzMafiozr8HXFsafF3VgF7N_5PdCYkD24
       </div>
       <div id="passage-section" class="passage-container" style="display:none;">
         <h5>Read the passage carefully:</h5>
-        <p>Most human beings are awake during the day and sleep at night. Owls live the opposite way. Owls are nocturnal. This means that they sleep all day and stay awake at night. Because owls are nocturnal, this means they must eat at night. But finding food in the dark is difficult. To help them, they have special eyes and ears.</p>
-        <p>Owls have very large eyes. These eyes absorb more light than normal. Since there is little light during the night, it is helpful to be able to absorb more of it. This helps owls find food in the dark.</p>
-        <p>Owls also have very good hearing. Even when owls are in the trees, they can hear small animals moving in the grass below. This helps owls catch their prey even when it is very dark.</p>
-        <p>Like owls, mice are also nocturnal animals. Mice have an excellent sense of smell. This helps them find food in the dark.</p>
-        <p>Being nocturnal helps mice to hide from many different animals that want to eat them. Most of the birds, snakes and lizards that like to eat mice sleep at night — except, of course, owls!</p>
+        <p>The Internet has revolutionized the way we communicate, work, and learn. It has connected people across the globe, allowing instant communication through emails, video calls, and social media platforms. Online education has made learning accessible to millions of students who might not otherwise have access to quality education.</p>
+        <p>However, the Internet also presents challenges. Cyberbullying, privacy concerns, and the spread of misinformation are serious issues that society must address. Children and teenagers are particularly vulnerable to online dangers, and parents must be vigilant about their children's internet usage.</p>
+        <p>The digital divide is another significant concern. Not everyone has equal access to the Internet, creating disparities in educational and economic opportunities. Rural areas often lack the infrastructure needed for high-speed internet connections.</p>
+        <p>Despite these challenges, the Internet remains one of the most powerful tools for education, business, and social connection. Its potential for positive impact continues to grow as technology advances and becomes more accessible.</p>
+        <p>As we move forward, it is crucial to harness the benefits of the Internet while addressing its challenges through education, regulation, and technological solutions.</p>
       </div>
       <div class="card p-3 mb-3 shadow" id="question-area"></div>
       <div class="mb-4">
@@ -195,69 +195,69 @@ let timerInterval;
 let timeLeft = 1800;
 
 const questions = [
-  {q:"Find the italicized part in the sentence that is incorrect:", stem:`<table style="border-collapse:collapse;width:auto"><tr style="vertical-align:bottom;font-size:1em"><td style="padding:0 2px">In some countries</td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>in Europe</em></span></td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>are allowed</em></span></td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>giving</em></span></td><td style="padding:0 2px">children some homework only</td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>at weekends</em></span></td><td style="padding:0 2px">.</td></tr><tr style="font-size:0.95em"><td></td><td style="text-align:center">1</td><td style="text-align:center">2</td><td style="text-align:center">3</td><td></td><td style="text-align:center">4</td><td></td></tr></table>`, options:["1","2","3","4"], parts:["in Europe","are allowed","giving","at weekends"]},
-  {q:"Choose the correct form of the verb to complete the sentence:", stem:"When <span class='blank'></span> this morning?", options:["did you woke up","did you wake up","have you woken up","were you woke up"]},
-  {q:"Choose the correct form of the verb to complete the sentence:", stem:"We <span class='blank'></span> volleyball yesterday.", options:["played","have played","had played","have been playing"]},
-  {q:"Choose the correct word to complete the sentence:", stem:"There is very <span class='blank'></span> petrol in the car. I’ll buy some when I go out.", options:["few","much","a little","little"]},
-  {q:"Choose the correct word to complete the sentence:", stem:"He apologized <span class='blank'></span> being late.", options:["to","for","on","of"]},
-  {q:"The word ‘diurnal’ is the opposite of the word nocturnal. Using information in the passage we can understand that an animal that is diurnal", stem:"", options:["sleeps at night and is awake during the day.","hunts during the day and is awake at night.","sleeps every other night and is awake during the day.","hunts at night and sleeps during the day."]},
-  {q:"Based on information in paragraph 2, it can be understood that an animal with small eyes", stem:"", options:["must be diurnal.","has trouble seeing in the dark.","can see very well at night.","must be nocturnal."]},
-  {q:"According to the passage, owls can find food in the dark using their sense of", stem:"", options:["sight only.","sight and sound.","sight, sound and smell.","sight and smell."]},
-  {q:"In paragraph 3 the author writes: ‘This helps owls catch their prey when it is very dark.’ What is prey?", stem:"", options:["A noise that an animal makes during the night.","A small animal such as a pet dog or cat.","An animal that is hunted by other animals.","An enemy."]},
-  {q:"According to the passage, mice sleep during the day in order to", stem:"", options:["find food that other animals cannot.","keep themselves safe.","store energy for night time activities.","stay awake at night."]},
-  {q:"Using information in the last paragraph, it can be understood that", stem:"", options:["owls hunt mice.","mice can hide from owls.","mice and owls both hide from birds, snakes and lizards.","owls sleep at night."]},
-  {q:"Which of the following conclusions would work best at the end of this passage?", stem:"", options:["The owl is a nocturnal animal. This means it is active at night. The owl’s excellent sense of sight and sound enables it to find food in the dark.","Mice are nocturnal animals. This means they are active at night. Similar to the owl, mice use their excellent sense of smell to find food in the dark.","Some animals are nocturnal. This means they are active at night. The owl and the mouse are good examples of animals that use their senses to find food in the dark.","The owl and the mouse sleep during the day and stay awake at night."]},
-  {q:"Choose the right question to get the italicized part as the answer:", stem:"The children are sitting in the garden.", options:["Where do children sit?","Where have the children been sitting?","Where are the children sitting?","Where are they sitting?"]},
-  {q:"Find the word that is pronounced differently from the others:", stem:"I. blood II. moon III. soon IV. mood", options:["I – blood","II – moon","III – soon","IV – mood"]},
-  {q:"Find the word that is pronounced differently from the others:", stem:"I. bear II. dare III. fare IV. dear", options:["I – bear","II – dare","III – fare","IV – dear"]},
-  {q:"Find the word that is pronounced differently from the others:", stem:"I. enjoyed II. jumped III. died IV. filled", options:["I – enjoyed","II – jumped","III – died","IV – filled"]},
-  {q:"Find the italicized part in the sentence that is incorrect:", stem:`<table style="border-collapse:collapse;width:auto"><tr style="vertical-align:bottom;font-size:1em"><td style="padding:0 2px">It is a</td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>well</em></span></td><td style="padding:0 2px">idea</td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>to encourage</em></span></td><td style="padding:0 2px">boys</td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>to learn</em></span></td><td style="padding:0 2px"> </td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>to cook</em></span></td><td style="padding:0 2px">.</td></tr><tr style="font-size:0.95em"><td></td><td style="text-align:center">1</td><td></td><td style="text-align:center">2</td><td></td><td style="text-align:center">3</td><td></td><td style="text-align:center">4</td><td></td></tr></table>`, options:["1","2","3","4"]},
-  {q:"Choose the word which has almost the same meaning as the italicized one:", stem:"I help them to <em>assemble</em> the different parts.", options:["manufacture","store","check","fit"]},
-  {q:"Choose the correct antonym for the italicized word:", stem:"Travelling is considered very <em>dangerous</em>.", options:["harmful","peaceful","safe","exciting"]},
-  {q:"Choose the correct antonym for the italicized word:", stem:"This is a <em>common</em> thing.", options:["strange","funny","real","special"]},
-  {q:"Read the short conversation and identify the language function:", stem:"Shrimathy: That remark was uncalled for.\nVenu: <em>I’m sorry, I shouldn’t have said it.</em>", options:["apologising","wishing","blaming","forgiving"]},
-  {q:"Read the short conversation and identify the language function:", stem:"Arun: What shall we do this weekend?\nSheela: <em>Why don’t we go on a picnic?</em>", options:["welcoming","inviting","suggesting","advising"]},
-  {q:"Choose the correct question tag:", stem:"Mary has answered all the questions,<span class='blank'></span>?", options:["doesn’t she","didn’t she","wasn’t she","hasn’t she"]},
-  {q:"Choose the correct question tag:", stem:"Hanif wasn’t listening <span class='blank'></span>?", options:["was he","has he","did he","isn’t he"]},
-  {q:"Choose the right question to get the italicized part as the answer:", stem:"Hari is writing a letter.", options:["What does Hari write?","What is Hari writing?","Who is writing a letter?","What is Hari doing?"]},
-  {q:"Choose the correct word to complete the sentence:", stem:"We are satisfied <span class='blank'></span> our son’s progress this term.", options:["for","on","about","with"]},
-  {q:"Which of the following is a form of the verb ‘be’?", stem:"", options:["may","am","can","will"]},
-  {q:"The passive form of the sentence “The Blue team won the game” is:", stem:"", options:["The game is won by the Blue team.","The game has been won by the Blue team.","The game had been won by the Blue team.","The game was won by the Blue team."]},
-  {q:"The reported form of the question “Renu said to me, ‘Is the movie interesting?’” is:", stem:"", options:["Renu asked me if the movie was interesting.","Renu asked me if the movie has been interesting.","Renu asked me if the movie is interesting.","Renu asked me if the movie had been interesting."]},
-  {q:"Choose the word which has almost the same meaning as the italicized one:", stem:"She <em>seldom</em> goes to conferences", options:["nearly","rarely","slightly","incredibly"]}
+  {q:"Choose the correct form of the verb to complete the sentence:", stem:"She <span class='blank'></span> to the market every morning.", options:["go","goes","going","gone"]},
+  {q:"Find the italicized part in the sentence that is incorrect:", stem:`<table style="border-collapse:collapse;width:auto"><tr style="vertical-align:bottom;font-size:1em"><td style="padding:0 2px">The students</td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>was</em></span></td><td style="padding:0 2px">very excited</td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>about</em></span></td><td style="padding:0 2px">the</td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>upcoming</em></span></td><td style="padding:0 2px">trip</td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>to the zoo</em></span></td><td style="padding:0 2px">.</td></tr><tr style="font-size:0.95em"><td></td><td style="text-align:center">1</td><td></td><td style="text-align:center">2</td><td></td><td style="text-align:center">3</td><td></td><td style="text-align:center">4</td><td></td></tr></table>`, options:["1","2","3","4"], parts:["was","about","upcoming","to the zoo"]},
+  {q:"Choose the correct word to complete the sentence:", stem:"I have <span class='blank'></span> finished my homework.", options:["just","yet","still","already"]},
+  {q:"Choose the correct preposition:", stem:"The book is <span class='blank'></span> the table.", options:["in","on","at","by"]},
+  {q:"Choose the correct question tag:", stem:"You haven't seen my keys, <span class='blank'></span>?", options:["have you","haven't you","did you","didn't you"]},
+  {q:"According to the passage, the Internet has revolutionized:", stem:"", options:["only communication","only education","communication, work, and learning","only business"]},
+  {q:"What is mentioned as a serious challenge of the Internet?", stem:"", options:["High cost","Slow speed","Cyberbullying and misinformation","Technical difficulties"]},
+  {q:"Who is particularly vulnerable to online dangers according to the passage?", stem:"", options:["Adults","Elderly people","Children and teenagers","Business professionals"]},
+  {q:"What does 'digital divide' refer to in the passage?", stem:"", options:["Different types of digital devices","Unequal access to the Internet","Various internet speeds","Different online platforms"]},
+  {q:"Which areas often lack high-speed internet infrastructure?", stem:"", options:["Urban areas","Suburban areas","Rural areas","Commercial areas"]},
+  {q:"Despite challenges, the Internet is described as:", stem:"", options:["A dangerous tool","One of the most powerful tools","An outdated technology","A limited resource"]},
+  {q:"The passage suggests that to address Internet challenges, we need:", stem:"", options:["To stop using the Internet","Education, regulation, and technological solutions","Only government intervention","Complete internet restriction"]},
+  {q:"Choose the word which has almost the same meaning as the italicized one:", stem:"The teacher <em>explained</em> the lesson clearly.", options:["confused","clarified","complicated","ignored"]},
+  {q:"Choose the correct antonym for the italicized word:", stem:"The weather is <em>pleasant</em> today.", options:["nice","beautiful","unpleasant","lovely"]},
+  {q:"Find the word that is pronounced differently from the others:", stem:"I. great II. break III. head IV. steak", options:["I – great","II – break","III – head","IV – steak"]},
+  {q:"Choose the correct form of the verb:", stem:"If I <span class='blank'></span> rich, I would travel the world.", options:["am","was","were","will be"]},
+  {q:"The passive form of 'They are building a new school' is:", stem:"", options:["A new school is being built by them.","A new school was being built by them.","A new school has been built by them.","A new school will be built by them."]},
+  {q:"Choose the correct reported speech:", stem:"She said, 'I am reading a book.'", options:["She said that she was reading a book.","She said that she is reading a book.","She said that she has been reading a book.","She said that she had read a book."]},
+  {q:"Choose the correct word to complete the sentence:", stem:"There are <span class='blank'></span> apples in the basket.", options:["much","many","a lot","little"]},
+  {q:"Find the word that is pronounced differently from the others:", stem:"I. thought II. through III. tough IV. throw", options:["I – thought","II – through","III – tough","IV – throw"]},
+  {q:"Read the short conversation and identify the language function:", stem:"Raj: Could you help me with this problem?\nSita: <em>Of course, I'd be happy to help.</em>", options:["requesting","agreeing","refusing","complaining"]},
+  {q:"Read the short conversation and identify the language function:", stem:"Mother: Don't forget to brush your teeth.\nChild: <em>Okay, I'll remember.</em>", options:["advising","promising","threatening","warning"]},
+  {q:"Choose the right question to get the italicized part as the answer:", stem:"<em>My sister</em> is cooking dinner.", options:["Who is cooking dinner?","What is your sister doing?","Who is your sister?","What is she cooking?"]},
+  {q:"Choose the correct question tag:", stem:"Let's go to the movies, <span class='blank'></span>?", options:["shall we","will we","don't we","won't we"]},
+  {q:"Choose the correct word to complete the sentence:", stem:"He is good <span class='blank'></span> mathematics.", options:["in","at","on","with"]},
+  {q:"Which of the following is a modal verb?", stem:"", options:["have","do","can","be"]},
+  {q:"Choose the correct comparative form:", stem:"This book is <span class='blank'></span> than that one.", options:["most interesting","more interesting","interesting","much interesting"]},
+  {q:"Find the italicized part in the sentence that is incorrect:", stem:`<table style="border-collapse:collapse;width:auto"><tr style="vertical-align:bottom;font-size:1em"><td style="padding:0 2px">Neither John</td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>nor</em></span></td><td style="padding:0 2px">his friends</td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>was</em></span></td><td style="padding:0 2px">present</td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>at</em></span></td><td style="padding:0 2px">the</td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>meeting</em></span></td><td style="padding:0 2px">.</td></tr><tr style="font-size:0.95em"><td></td><td style="text-align:center">1</td><td></td><td style="text-align:center">2</td><td></td><td style="text-align:center">3</td><td></td><td style="text-align:center">4</td><td></td></tr></table>`, options:["1","2","3","4"]},
+  {q:"Choose the word which has almost the same meaning as the italicized one:", stem:"The movie was quite <em>boring</em>.", options:["interesting","exciting","dull","amazing"]},
+  {q:"Choose the correct form of the verb:", stem:"By next year, I <span class='blank'></span> my degree.", options:["will complete","will have completed","would complete","have completed"]}
 ];
 
 const correctAnswers = [
-  "3", // Q1: option 3 ("giving")
-  "did you wake up", // Q2: b
-  "played", // Q3: a
-  "little", // Q4: d
-  "for", // Q5: b
-  "sleeps at night and is awake during the day.", // Q6: a
-  "can see very well at night.", // Q7: b
-  "sight and sound.", // Q8: b
-  "An animal that is hunted by other animals.", // Q9: c
-  "stay awake at night.", // Q10: b
-  "mice can hide from owls.", // Q11: b
-  "Some animals are nocturnal. This means they are active at night. The owl and the mouse are good examples of animals that use their senses to find food in the dark.", // Q12: c
-  "Where are the children sitting?", // Q13: c
-  "I – blood", // Q14: a
-  "IV – dear", // Q15: d
-  "II – jumped", // Q16: b
-  "1", // Q17: a
-  "fit", // Q18: d
-  "safe", // Q19: c
-  "strange", // Q20: a
-  "apologising", // Q21: a
-  "suggesting", // Q22: c
-  "hasn’t she", // Q23: d
-  "was he", // Q24: a
-  "What is Hari writing?", // Q25: b
-  "with", // Q26: d
-  "am", // Q27: b
-  "The game was won by the Blue team.", // Q28: d
-  "Renu asked me if the movie was interesting.", // Q29: a
-  "rarely" // Q30: b
+  "goes", // Q1: b
+  "1", // Q2: option 1 ("was" should be "were")
+  "just", // Q3: a
+  "on", // Q4: b
+  "have you", // Q5: a
+  "communication, work, and learning", // Q6: c
+  "Cyberbullying and misinformation", // Q7: c
+  "Children and teenagers", // Q8: c
+  "Unequal access to the Internet", // Q9: b
+  "Rural areas", // Q10: c
+  "One of the most powerful tools", // Q11: b
+  "Education, regulation, and technological solutions", // Q12: b
+  "clarified", // Q13: b
+  "unpleasant", // Q14: c
+  "III – head", // Q15: c
+  "were", // Q16: c
+  "A new school is being built by them.", // Q17: a
+  "She said that she was reading a book.", // Q18: a
+  "many", // Q19: b
+  "III – tough", // Q20: c
+  "agreeing", // Q21: b
+  "promising", // Q22: b
+  "Who is cooking dinner?", // Q23: a
+  "shall we", // Q24: a
+  "at", // Q25: b
+  "can", // Q26: c
+  "more interesting", // Q27: b
+  "2", // Q28: option 2 ("was" should be "were")
+  "dull", // Q29: c
+  "will have completed" // Q30: b
 ];
 
 function startQuiz(){
@@ -356,6 +356,7 @@ function sendToGoogleSheet() {
   const timeTaken = (1800 - timeLeft) + " seconds";
 
   const payload = {
+    quizName: "Test2",
     name,
     email,
     phone,
@@ -641,6 +642,7 @@ function sendToGoogleSheet() {
   const timeTaken = (1800 - timeLeft) + " seconds";
 
   const payload = {
+    quizName: "Test2",
     name,
     email,
     phone,
