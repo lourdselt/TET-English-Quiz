@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TET Quiz</title>
+
+<!-- Google Fonts + Icons -->
+<link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+<!-- Materialize CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+
+<!-- Materialize JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+  body {
+    font-family: 'Roboto', sans-serif;
+    background: #f4f6f8;
+  }
+  .quiz-card {
+    padding: 20px;
+    margin: 20px auto;
+    max-width: 900px;
+    background: #fff;
+    border-radius: 12px;
+  }
+  .question-grid button {
+    margin: 4px;
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    font-weight: bold;
+    border: none;
+    color: #fff;
+  }
+  .unanswered { background-color: #e53935; }
+  .answered { background-color: #43a047; }
+  .marked { background-color: #8e24aa; }
+  .timer {
+    font-weight: bold;
+    margin-bottom: 16px;
+    text-align: right;
+  }
+  .correct { color: green; font-weight: bold; }
+  .wrong { color: red; font-weight: bold; }
+</style>
+</head>
+
+<body>
+<div class="quiz-card" id="login">
+  <h4 class="center-align">Enter Candidate Details</h4>
+
+  <div class="input-field">
+    <input id="name" type="text" class="validate">
+    <label for="name">Name</label>
+  </div>
+
+  <div class="input-field">
+    <input id="email" type="email" class="validate">
+    <label for="email">Email</label>
+  </div>
+
+  <div class="input-field">
+    <input id="phone" type="tel" class="validate">
+    <label for="phone">Phone Number</label>
+  </div>
+
+  <div class="input-field">
+    <select id="subject" onchange="checkOtherSubject()">
+      <option value="" disabled selected>Choose Subject</option>
+      <option value="Tamil">Tamil</option>
+      <option value="English">English</option>
+      <option value="Maths">Maths</option>
+      <option value="Physics">Physics</option>
+      <option value="Chemistry">Chemistry</option>
+      <option value="Botany">Botany</option>
+      <option value="Zoology">Zoology</option>
+      <option value="History">History</option>
+      <option value="Geography">Geography</option>
+      <option value="Other">Other</option>
+    </select>
+    <label>Subject</label>
+  </div>
+
+  <div class="input-field" id="otherSubjectWrapper" style="display:none;">
+    <input id="otherSubject" type="text" class="validate">
+    <label for="otherSubject">Please specify subject</label>
+  </div>
+
+  <div class="center-align">
+    <button class="btn waves-effect waves-light blue" onclick="startQuiz()">Start Quiz
+      <i class="material-icons right">send</i>
+    </button>
+  </div>
+</div>
+
+<div id="quiz" class="quiz-card" style="display:none;">
+  <div class="timer" id="timer">Time Remaining: 30:00</div>
+  <div id="question-grid" class="question-grid"></div>
+  <div id="question-area" style="margin-top:16px;"></div>
+  <div class="center-align" style="margin-top:16px;">
+    <button class="btn grey" onclick="prevQuestion()">Previous</button>
+    <button class="btn grey" onclick="nextQuestion()">Next</button>
+    <button class="btn orange" id="review-btn" onclick="toggleReview()">Mark for Review</button>
+    <button class="btn green" onclick="submitQuiz()">Submit Test</button>
+  </div>
+</div>
+
+<div id="result" class="quiz-card" style="display:none;">
+  <h4 class="center-align">Quiz Result</h4>
+  <p id="candidate-details"></p>
+  <p>Total Questions: 30</p>
+  <p>Attempted: <span id="attempted"></span></p>
+  <p>Unattempted: <span id="unattempted"></span></p>
+  <p>Score: <span id="score"></span> / 30</p>
+  <p>Time Taken: <span id="time-taken"></span></p>
+  <div id="answer-review"></div>
+  <div class="center-align">
+    <button class="btn blue" onclick="downloadPDF()">Download PDF</button>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var elems = document.querySelectorAll('select');
+  M.FormSelect.init(elems);
+});
+
+let currentQuestion = 0;
+let selectedAnswers = Array(30).fill(null);
+let markedQuestions = Array(30).fill(false);
+let timerInterval;
+let timeLeft = 1800;
+const optionCodes = ['A','B','C','D'];
+
+// ====== All 30 Questions ======
+const questions = [
+  {q:"Find the italicized part in the sentence that is incorrect:", stem:"In some countries <em>in Europe</em> <em>are allowed</em> <em>giving</em> children some homework only <em>at weekends</em>.", options:["1","2","3","4"]},
+  {q:"Choose the correct form of the verb:", stem:"When <span class='blank'></span> this morning?", options:["did you woke up","did you wake up","have you woken up","were you woke up"]},
+  {q:"Choose the correct form of the verb:", stem:"We <span class='blank'></span> volleyball yesterday.", options:["played","have played","had played","have been playing"]},
+  {q:"Choose the correct word:", stem:"There is very <span class='blank'></span> petrol in the car.", options:["few","much","a little","little"]},
+  {q:"Choose the correct word:", stem:"He apologized <span class='blank'></span> being late.", options:["to","for","on","of"]},
+  {q:"The word ‘diurnal’ is the opposite of:", stem:"", options:["sleeps at night and is awake during the day.","hunts during the day and is awake at night.","sleeps every other night and is awake during the day.","hunts at night and sleeps during the day."]},
+  {q:"Animal with small eyes…", stem:"", options:["must be diurnal.","has trouble seeing in the dark.","can see very well at night.","must be nocturnal."]},
+  {q:"Owls find food using:", stem:"", options:["sight only.","sight and sound.","sight, sound and smell.","sight and smell."]},
+  {q:"‘Prey’ means:", stem:"", options:["Noise an animal makes","A pet dog or cat","An animal that is hunted","An enemy"]},
+  {q:"Mice sleep during the day to:", stem:"", options:["find food","keep safe","store energy","stay awake at night."]},
+  {q:"Last paragraph shows:", stem:"", options:["owls hunt mice.","mice hide from owls.","both hide from predators.","owls sleep at night."]},
+  {q:"Best conclusion:", stem:"", options:["The owl is nocturnal…","Mice are nocturnal…","Some animals are nocturnal…","Owls and mice sleep in day."]},
+  {q:"Correct question:", stem:"The children are sitting in the garden.", options:["Where do children sit?","Where have they been sitting?","Where are they sitting?","Where are the children sitting?"]},
+  {q:"Odd one out:", stem:"blood, moon, soon, mood", options:["I – blood","II – moon","III – soon","IV – mood"]},
+  {q:"Odd one out:", stem:"bear, dare, fare, dear", options:["I – bear","II – dare","III – fare","IV – dear"]},
+  {q:"Odd one out:", stem:"enjoyed, jumped, died, filled", options:["I – enjoyed","II – jumped","III – died","IV – filled"]},
+  {q:"Incorrect italicized part:", stem:"It is a <em>well</em> idea to encourage boys to learn to cook.", options:["1","2","3","4"]},
+  {q:"Synonym for assemble:", stem:"I help them to <em>assemble</em> the parts.", options:["manufacture","store","check","fit"]},
+  {q:"Antonym of dangerous:", stem:"Travelling is considered very <em>dangerous</em>.", options:["harmful","peaceful","safe","exciting"]},
+  {q:"Antonym of common:", stem:"This is a <em>common</em> thing.", options:["strange","funny","real","special"]},
+  {q:"Language function:", stem:"Shrimathy: That remark was uncalled for. Venu: I’m sorry…", options:["apologising","wishing","blaming","forgiving"]},
+  {q:"Language function:", stem:"Arun: What shall we do? Sheela: Why don’t we go…", options:["welcoming","inviting","suggesting","advising"]},
+  {q:"Question tag:", stem:"Mary has answered all the questions,<span class='blank'></span>?", options:["doesn’t she","didn’t she","wasn’t she","hasn’t she"]},
+  {q:"Question tag:", stem:"Hanif wasn’t listening,<span class='blank'></span>?", options:["was he","has he","did he","isn’t he"]},
+  {q:"Correct question:", stem:"Hari is writing a letter.", options:["What does Hari write?","What is Hari writing?","Who is writing?","What is Hari doing?"]},
+  {q:"Correct word:", stem:"We are satisfied <span class='blank'></span> progress.", options:["for","on","about","with"]},
+  {q:"Verb ‘be’ form:", stem:"", options:["may","am","can","will"]},
+  {q:"Passive voice:", stem:"The Blue team won the game", options:["is won","has been won","had been won","was won"]},
+  {q:"Reported speech:", stem:"Renu said to me, ‘Is the movie interesting?’", options:["was interesting","has been interesting","is interesting","had been interesting"]},
+  {q:"Synonym of seldom:", stem:"She <em>seldom</em> goes to conferences", options:["nearly","rarely","slightly","incredibly"]}
+];
+
+// ====== Correct Answers as Codes ======
+const correctAnswers = [
+ "C","B","A","D","B",
+ "A","B","B","C","B",
+ "B","C","C","A","D",
+ "B","A","D","C","A",
+ "A","C","D","A","B",
+ "D","B","D","A","B"
+];
+
+// ====== Functions ======
+function checkOtherSubject() {
+  const subject = document.getElementById('subject').value;
+  const otherInput = document.getElementById('otherSubjectWrapper');
+  otherInput.style.display = (subject === "Other") ? "block" : "none";
+  if (subject !== "Other") document.getElementById('otherSubject').value = "";
+}
+
+function startQuiz(){
+  const name=document.getElementById('name').value.trim();
+  const email=document.getElementById('email').value.trim();
+  const phone=document.getElementById('phone').value.trim();
+  let subject=document.getElementById('subject').value;
+  if (subject === "Other") {
+    subject=document.getElementById('otherSubject').value.trim();
+    if (!subject) { alert("Please specify your subject"); return; }
+  }
+  if(!name||!email||!phone||!subject){alert("Please fill all details");return;}
+  window.candidateInfo={name,email,phone,subject};
+  document.getElementById('login').style.display='none';
+  document.getElementById('quiz').style.display='block';
+  buildGrid(); showQuestion(0); startTimer();
+}
+
+function buildGrid(){ 
+  let grid=document.getElementById('question-grid'); 
+  for(let i=0;i<30;i++){ 
+    let btn=document.createElement('button'); 
+    btn.innerText=i+1; btn.className='unanswered'; btn.id="qbtn"+i; 
+    btn.onclick=()=>{currentQuestion=i;showQuestion(i);} 
+    grid.appendChild(btn);
+  } 
+}
+
+function showQuestion(index){
+  let q=questions[index];
+  let html=`<h5>Q${index+1}. ${q.q}</h5><div>${q.stem||""}</div>`;
+  q.options.forEach((opt,i)=>{
+    html+=`<p><label><input type="radio" name="opt" value="${opt}" ${selectedAnswers[index]===optionCodes[i]?'checked':''} onclick="selectOption('${opt}')"><span>${optionCodes[i]}) ${opt}</span></label></p>`;
+  });
+  document.getElementById('question-area').innerHTML=html;
+}
+
+function selectOption(val){ 
+  const idx=questions[currentQuestion].options.indexOf(val); 
+  selectedAnswers[currentQuestion]=optionCodes[idx]; 
+  updateGrid(); 
+}
+
+function updateGrid(){ 
+  for(let i=0;i<30;i++){ 
+    let btn=document.getElementById('qbtn'+i); 
+    if(markedQuestions[i]) btn.className='marked'; 
+    else if(selectedAnswers[i]) btn.className='answered'; 
+    else btn.className='unanswered'; 
+  } 
+}
+
+function nextQuestion(){if(currentQuestion<29){currentQuestion++;showQuestion(currentQuestion);}}
+function prevQuestion(){if(currentQuestion>0){currentQuestion--;showQuestion(currentQuestion);}}
+function toggleReview(){markedQuestions[currentQuestion]=!markedQuestions[currentQuestion];document.getElementById('review-btn').innerText=markedQuestions[currentQuestion]?"Unmark Review":"Mark for Review";updateGrid();}
+function startTimer(){timerInterval=setInterval(()=>{timeLeft--;let min=Math.floor(timeLeft/60),sec=timeLeft%60;document.getElementById('timer').innerText=`Time Remaining: ${min}:${sec<10?'0'+sec:sec}`;if(timeLeft<=0){clearInterval(timerInterval);submitQuiz();}},1000);}
+function submitQuiz(){clearInterval(timerInterval);document.getElementById('quiz').style.display='none';document.getElementById('result').style.display='block';showResult();sendToGoogleSheet();}
+
+function showResult(){
+  const {name,email,phone,subject}=window.candidateInfo;
+  document.getElementById('candidate-details').innerText=`Name: ${name}, Email: ${email}, Phone: ${phone}, Subject: ${subject}`;
+  const attempted=selectedAnswers.filter(a=>a!==null).length;
+  document.getElementById('attempted').innerText=attempted;
+  document.getElementById('unattempted').innerText=30-attempted;
+  let score=0; let html="";
+  for(let i=0;i<30;i++){
+    let user=selectedAnswers[i]; let correct=correctAnswers[i];
+    if(user===correct) score++;
+    html+=`<p><b>Q${i+1}:</b> Your answer: <span class="${user===correct?'correct':'wrong'}">${user?questions[i].options[optionCodes.indexOf(user)]:'Not answered'}</span> | Correct: ${questions[i].options[optionCodes.indexOf(correct)]}</p>`;
+  }
+  document.getElementById('score').innerText=score;
+  let timeTaken=(1800-timeLeft)/60;
+  document.getElementById('time-taken').innerText=timeTaken.toFixed(2)+" minutes";
+}
+
+function sendToGoogleSheet(){
+  const {name,email,phone,subject}=window.candidateInfo;
+  const attempted=selectedAnswers.filter(a=>a!==null).length;
+  const unattempted=30-attempted;
+  const score=document.getElementById('score').innerText;
+  let timeTaken=(1800-timeLeft)/60;
+  const payload={quizName:"Test1",name,email,phone,subject,attempted,unattempted,score,timeTaken:timeTaken.toFixed(2)+" minutes",answers:selectedAnswers};
+  fetch("https://script.google.com/macros/s/AKfycbzMafiozr8HXFsafF3VgF7N_5PdCYkD24kQCv00s5u4bOqcJ40kqrn5Wxo4BzREcSWpMA/exec",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),mode:"no-cors"}).then(()=>console.log("Submitted"));
+}
+
+function downloadPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ format: 'a4', unit: 'mm' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  function drawWatermark() {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(40);
+    doc.setTextColor(220, 220, 220);
+    doc.text("LOURDS ENGLISH ACADEMY", pageWidth / 2, pageHeight / 2, { align: "center", angle: 45 });
+    doc.setTextColor(0);
+  }
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("LOURDS ENGLISH ACADEMY", pageWidth / 2, 15, { align: "center" });
+  doc.setFontSize(12);
+  doc.text(document.title || "Test Result", pageWidth / 2, 22, { align: "center" });
+  let y = 30;
+  const { name, email, phone, subject } = window.candidateInfo;
+  let details = [["Name", name],["Email", email],["Phone", phone],["Subject", subject]];
+  doc.setFont("helvetica", "normal"); doc.setFontSize(11);
+  details.forEach(row => { doc.text(`${row[0]}: ${row[1]}`, 15, y); y += 7; });
+  const attempted = selectedAnswers.filter(a=>a!==null).length;
+  const unattempted = 30 - attempted;
+  const score = document.getElementById("score").innerText;
+  const timeTaken = ((1800 - timeLeft) / 60).toFixed(2) + " minutes";
+  let stats = [["Total Questions", "30"],["Attempted", attempted.toString()],["Unattempted", unattempted.toString()],["Score", `${score} / 30`],["Time Taken", timeTaken]];
+  y += 5; stats.forEach(row => { doc.text(`${row[0]}: ${row[1]}`, 15, y); y += 7; });
+  y += 10;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+  doc.text("Q.No.", 15, y); doc.text("Correct Answer", 40, y); doc.text("Your Answer", 120, y);
+  y += 6; doc.line(10, y - 5, pageWidth - 10, y - 5);
+  doc.setFont("helvetica", "normal");
+  for (let i = 0; i < 30; i++) {
+    let correct = correctAnswers[i];
+    let user = selectedAnswers[i] || "Not answered";
+    doc.setTextColor(0, 0, 0); doc.text(`${i + 1}`, 15, y);
+    doc.text(questions[i].options[optionCodes.indexOf(correct)], 40, y);
+    if (user === "Not answered") { doc.setTextColor(128, 128, 128); doc.text(user, 120, y); }
+    else if (user === correct) { doc.setTextColor(0, 150, 0); doc.text(questions[i].options[optionCodes.indexOf(user)], 120, y); }
+    else { doc.setTextColor(200, 0, 0); doc.text(questions[i].options[optionCodes.indexOf(user)], 120, y); }
+    y += 7;
+    if (y > pageHeight - 30) { doc.addPage(); drawWatermark(); y = 20; }
+  }
+  doc.setFontSize(9); doc.setTextColor(100);
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.text(`Page ${i} of ${pageCount}`, 15, pageHeight - 10);
+    const now = new Date();
+    const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")} ${String(now.getHours()).toString().padStart(2,"0")}:${String(now.getMinutes()).toString().padStart(2,"0")}`;
+    doc.text(ts, pageWidth - 50, pageHeight - 10);
+  }
+  doc.setPage(1); drawWatermark();
+  doc.save("Quiz_Result.pdf");
+}
+</script>
+</body>
+</html>

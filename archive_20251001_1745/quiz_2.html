@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TET Quiz</title>
+<title>TET Test 2</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
@@ -15,7 +15,7 @@ function sendToGoogleSheet() {
   const timeTaken = (1800 - timeLeft) + " seconds";
 
   const payload = {
-    quizName: "Test1",
+    quizName: "Test2",
     name,
     email,
     phone,
@@ -29,7 +29,7 @@ function sendToGoogleSheet() {
 
   
   console.log("Sending payload:", payload);
-fetch("https://script.google.com/macros/s/AKfycbzMafiozr8HXFsafF3VgF7N_5PdCYkD24kQCv00s5u4bOqcJ40kqrn5Wxo4BzREcSWpMA/exec", {
+fetch("https://script.google.com/macros/s/AKfycbyCIF0KcmXBrIMiam0rDzsZB61TzJCvWodzoea5PrJuTgceiif46_oDq4tJRMKypbH3-w/exec", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
@@ -64,7 +64,36 @@ fetch("https://script.google.com/macros/s/AKfycbzMafiozr8HXFsafF3VgF7N_5PdCYkD24
   .unanswered { background-color: #dc3545; }
   .answered { background-color: #28a745; }
   .marked { background-color: #6f42c1; }
-  .passage-container { max-height: 220px; overflow-y: auto; padding: 10px; background: #f8f9fa; border-radius: 8px; border: 1px solid #ced4da; margin-bottom: 15px; }
+    .passage-container {
+    max-height: 280px;
+    overflow-y: auto;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    margin-bottom: 20px;
+    color: white;
+    line-height: 1.6;
+  }
+  
+  .passage-container::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .passage-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+  }
+  
+  .passage-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+  }
+  
+  .passage-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+  }
   .timer { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; }
   .correct { color: green; font-weight: bold; }
   .wrong { color: red; font-weight: bold; }
@@ -112,6 +141,51 @@ fetch("https://script.google.com/macros/s/AKfycbzMafiozr8HXFsafF3VgF7N_5PdCYkD24
   .site-header .testname { font-size: 0.95rem; color: #555; }
   /* Ensure page content is not hidden behind fixed header */
   body { padding-top: 72px; }
+  
+  /* Mobile responsiveness for underlined text in questions */
+  @media (max-width: 768px) {
+    .option-div {
+      margin: 5px 0;
+      flex-wrap: wrap;
+    }
+    
+    .option-div label {
+      word-break: break-word;
+      line-height: 1.4;
+    }
+    
+    /* Better wrapping for underlined elements */
+    u, em {
+      display: inline-block;
+      word-break: break-word;
+      max-width: 100%;
+    }
+    
+    /* Prevent text overflow in question stems */
+    #question-area div {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+  }
+  
+  /* Mobile responsiveness for underlined text in questions */
+  @media (max-width: 768px) {
+    .option-div {
+      margin: 5px 0;
+      flex-wrap: wrap;
+    }
+    
+    .option-div label {
+      word-break: break-word;
+      line-height: 1.4;
+    }
+    
+    /* Better wrapping for underlined elements */
+    u, em {
+      display: inline-block;
+      word-break: break-word;
+    }
+  }
 </style>
 </head>
 <body>
@@ -146,6 +220,10 @@ fetch("https://script.google.com/macros/s/AKfycbzMafiozr8HXFsafF3VgF7N_5PdCYkD24
         <span class="fw-bold">Red:</span> Unanswered<br>
         <span class="fw-bold">Purple:</span> Marked
       </div>
+      <div class="answer-counts text-center">
+        <div class="small">Answered: <span id="answered-count" class="fw-bold text-success">0</span></div>
+        <div class="small">Unanswered: <span id="unanswered-count" class="fw-bold text-danger">30</span></div>
+      </div>
     </div>
     <div class="col-md-10 p-4">
       <div class="timer text-end" id="timer">Time Remaining: 30:00</div>
@@ -153,18 +231,16 @@ fetch("https://script.google.com/macros/s/AKfycbzMafiozr8HXFsafF3VgF7N_5PdCYkD24
         <div id="timerBar" class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
       </div>
       <div id="passage-section" class="passage-container" style="display:none;">
-        <h5>Read the passage carefully:</h5>
-        <p>Most human beings are awake during the day and sleep at night. Owls live the opposite way. Owls are nocturnal. This means that they sleep all day and stay awake at night. Because owls are nocturnal, this means they must eat at night. But finding food in the dark is difficult. To help them, they have special eyes and ears.</p>
-        <p>Owls have very large eyes. These eyes absorb more light than normal. Since there is little light during the night, it is helpful to be able to absorb more of it. This helps owls find food in the dark.</p>
-        <p>Owls also have very good hearing. Even when owls are in the trees, they can hear small animals moving in the grass below. This helps owls catch their prey even when it is very dark.</p>
-        <p>Like owls, mice are also nocturnal animals. Mice have an excellent sense of smell. This helps them find food in the dark.</p>
-        <p>Being nocturnal helps mice to hide from many different animals that want to eat them. Most of the birds, snakes and lizards that like to eat mice sleep at night — except, of course, owls!</p>
+        <h5 style="color: white; margin-bottom: 16px;">📖 Read the passage carefully:</h5>
+        <p>Most of us use the products of science – railways, aeroplanes, electricity, phones and thousands of others – without thinking how they came into existence. We take them for granted, as if we are entitled to them as a matter of right. And we are very proud of the fact that we live in an advanced age and are ourselves so very advanced.</p>
+        <p>There is no doubt that our age is a very different one from previous ages and I think it is perfectly correct to say that it is far more advanced. But that is a different thing from saying that we as individuals or groups are more advanced.</p>
+        <p>It would be the height of absurdity to say that because an engine driver can run an engine and Plato or Socrates could not, the engine driver is more advanced than, or is superior to Plato or Socrates. But it would be perfectly correct to say that the engine itself is a more advanced method of locomotion than Plato's chariot was.</p>
       </div>
       <div class="card p-3 mb-3 shadow" id="question-area"></div>
       <div class="mb-4">
         <button class="btn btn-secondary me-2" onclick="prevQuestion()">Previous</button>
         <button class="btn btn-secondary me-2" onclick="nextQuestion()">Next</button>
-        <button class="btn btn-warning me-2" onclick="markForReview()">Mark for Review</button>
+        <button class="btn btn-warning me-2" id="mark-btn" onclick="toggleMarkForReview()">Mark for Review</button>
         <button class="btn btn-success" onclick="submitQuiz()">Submit Test</button>
       </div>
     </div>
@@ -195,69 +271,69 @@ let timerInterval;
 let timeLeft = 1800;
 
 const questions = [
-  {q:"Find the italicized part in the sentence that is incorrect:", stem:`<table style="border-collapse:collapse;width:auto"><tr style="vertical-align:bottom;font-size:1em"><td style="padding:0 2px">In some countries</td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>in Europe</em></span></td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>are allowed</em></span></td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>giving</em></span></td><td style="padding:0 2px">children some homework only</td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>at weekends</em></span></td><td style="padding:0 2px">.</td></tr><tr style="font-size:0.95em"><td></td><td style="text-align:center">1</td><td style="text-align:center">2</td><td style="text-align:center">3</td><td></td><td style="text-align:center">4</td><td></td></tr></table>`, options:["1","2","3","4"], parts:["in Europe","are allowed","giving","at weekends"]},
-  {q:"Choose the correct form of the verb to complete the sentence:", stem:"When <span class='blank'></span> this morning?", options:["did you woke up","did you wake up","have you woken up","were you woke up"]},
-  {q:"Choose the correct form of the verb to complete the sentence:", stem:"We <span class='blank'></span> volleyball yesterday.", options:["played","have played","had played","have been playing"]},
-  {q:"Choose the correct word to complete the sentence:", stem:"There is very <span class='blank'></span> petrol in the car. I’ll buy some when I go out.", options:["few","much","a little","little"]},
-  {q:"Choose the correct word to complete the sentence:", stem:"He apologized <span class='blank'></span> being late.", options:["to","for","on","of"]},
-  {q:"The word ‘diurnal’ is the opposite of the word nocturnal. Using information in the passage we can understand that an animal that is diurnal", stem:"", options:["sleeps at night and is awake during the day.","hunts during the day and is awake at night.","sleeps every other night and is awake during the day.","hunts at night and sleeps during the day."]},
-  {q:"Based on information in paragraph 2, it can be understood that an animal with small eyes", stem:"", options:["must be diurnal.","has trouble seeing in the dark.","can see very well at night.","must be nocturnal."]},
-  {q:"According to the passage, owls can find food in the dark using their sense of", stem:"", options:["sight only.","sight and sound.","sight, sound and smell.","sight and smell."]},
-  {q:"In paragraph 3 the author writes: ‘This helps owls catch their prey when it is very dark.’ What is prey?", stem:"", options:["A noise that an animal makes during the night.","A small animal such as a pet dog or cat.","An animal that is hunted by other animals.","An enemy."]},
-  {q:"According to the passage, mice sleep during the day in order to", stem:"", options:["find food that other animals cannot.","keep themselves safe.","store energy for night time activities.","stay awake at night."]},
-  {q:"Using information in the last paragraph, it can be understood that", stem:"", options:["owls hunt mice.","mice can hide from owls.","mice and owls both hide from birds, snakes and lizards.","owls sleep at night."]},
-  {q:"Which of the following conclusions would work best at the end of this passage?", stem:"", options:["The owl is a nocturnal animal. This means it is active at night. The owl’s excellent sense of sight and sound enables it to find food in the dark.","Mice are nocturnal animals. This means they are active at night. Similar to the owl, mice use their excellent sense of smell to find food in the dark.","Some animals are nocturnal. This means they are active at night. The owl and the mouse are good examples of animals that use their senses to find food in the dark.","The owl and the mouse sleep during the day and stay awake at night."]},
-  {q:"Choose the right question to get the italicized part as the answer:", stem:"The children are sitting in the garden.", options:["Where do children sit?","Where have the children been sitting?","Where are the children sitting?","Where are they sitting?"]},
-  {q:"Find the word that is pronounced differently from the others:", stem:"I. blood II. moon III. soon IV. mood", options:["I – blood","II – moon","III – soon","IV – mood"]},
-  {q:"Find the word that is pronounced differently from the others:", stem:"I. bear II. dare III. fare IV. dear", options:["I – bear","II – dare","III – fare","IV – dear"]},
-  {q:"Find the word that is pronounced differently from the others:", stem:"I. enjoyed II. jumped III. died IV. filled", options:["I – enjoyed","II – jumped","III – died","IV – filled"]},
-  {q:"Find the italicized part in the sentence that is incorrect:", stem:`<table style="border-collapse:collapse;width:auto"><tr style="vertical-align:bottom;font-size:1em"><td style="padding:0 2px">It is a</td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>well</em></span></td><td style="padding:0 2px">idea</td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>to encourage</em></span></td><td style="padding:0 2px">boys</td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>to learn</em></span></td><td style="padding:0 2px"> </td><td style="padding:0 2px;text-align:center"><span style="text-decoration:underline"><em>to cook</em></span></td><td style="padding:0 2px">.</td></tr><tr style="font-size:0.95em"><td></td><td style="text-align:center">1</td><td></td><td style="text-align:center">2</td><td></td><td style="text-align:center">3</td><td></td><td style="text-align:center">4</td><td></td></tr></table>`, options:["1","2","3","4"]},
-  {q:"Choose the word which has almost the same meaning as the italicized one:", stem:"I help them to <em>assemble</em> the different parts.", options:["manufacture","store","check","fit"]},
-  {q:"Choose the correct antonym for the italicized word:", stem:"Travelling is considered very <em>dangerous</em>.", options:["harmful","peaceful","safe","exciting"]},
-  {q:"Choose the correct antonym for the italicized word:", stem:"This is a <em>common</em> thing.", options:["strange","funny","real","special"]},
-  {q:"Read the short conversation and identify the language function:", stem:"Shrimathy: That remark was uncalled for.\nVenu: <em>I’m sorry, I shouldn’t have said it.</em>", options:["apologising","wishing","blaming","forgiving"]},
-  {q:"Read the short conversation and identify the language function:", stem:"Arun: What shall we do this weekend?\nSheela: <em>Why don’t we go on a picnic?</em>", options:["welcoming","inviting","suggesting","advising"]},
-  {q:"Choose the correct question tag:", stem:"Mary has answered all the questions,<span class='blank'></span>?", options:["doesn’t she","didn’t she","wasn’t she","hasn’t she"]},
-  {q:"Choose the correct question tag:", stem:"Hanif wasn’t listening <span class='blank'></span>?", options:["was he","has he","did he","isn’t he"]},
-  {q:"Choose the right question to get the italicized part as the answer:", stem:"Hari is writing a letter.", options:["What does Hari write?","What is Hari writing?","Who is writing a letter?","What is Hari doing?"]},
-  {q:"Choose the correct word to complete the sentence:", stem:"We are satisfied <span class='blank'></span> our son’s progress this term.", options:["for","on","about","with"]},
-  {q:"Which of the following is a form of the verb ‘be’?", stem:"", options:["may","am","can","will"]},
-  {q:"The passive form of the sentence “The Blue team won the game” is:", stem:"", options:["The game is won by the Blue team.","The game has been won by the Blue team.","The game had been won by the Blue team.","The game was won by the Blue team."]},
-  {q:"The reported form of the question “Renu said to me, ‘Is the movie interesting?’” is:", stem:"", options:["Renu asked me if the movie was interesting.","Renu asked me if the movie has been interesting.","Renu asked me if the movie is interesting.","Renu asked me if the movie had been interesting."]},
-  {q:"Choose the word which has almost the same meaning as the italicized one:", stem:"She <em>seldom</em> goes to conferences", options:["nearly","rarely","slightly","incredibly"]}
+  {q:"Pick out the adjective which can best fill in the blank:", stem:"The <span class='blank'></span> chapters are lacking in interest.", options:["later","latest","latter","letter"]},
+  {q:"Which is the most appropriate passive form of the sentence?", stem:"\"One should keep one's promises\"", options:["We should keep our promises","Promises should be kept","Promises need not be kept","Promises may be kept"]},
+  {q:"The most appropriate conversion to a simple sentence from:", stem:"\"We must eat, or we cannot live\" is —", options:["We must live to eat","We must not live to eat","We must eat and live","We must eat to live"]},
+  {q:"In which classification of work can we categorise teaching?", stem:"", options:["Clerical","Managerial","Skilled","Professional"]},
+  {q:"Choose the most appropriate complementary closing for a letter addressed to Sub-Inspector of Police:", stem:"", options:["Yours lovingly","Lovingly yours","Yours truly","Yours affectionately"]},
+  {q:"Sequence the sentences properly:", stem:"S1 – There was no limit to insanitation<br>S6 – So I asked for a broom to clean them myself.<br>P – There were only a few latrines<br>Q – They refused point-blank to clean them<br>R – Pools of water were everywhere<br>S – I pointed it out to the volunteers<br>Proper sequence is —", options:["RSPQ","QPSR","RPSQ","QSPR"]},
+  {q:"Identify the one italicized expression that must be changed:", stem:"Things will be <u><em>A better</em></u> if I <u><em>B will get</em></u> a job and <u><em>C earn</em></u> some money. Then I <u><em>D won't have</em></u> to live with my parents.", options:["A","B","C","D"]},
+  {q:"Identify the one that must be changed:", stem:"The company <u><em>A claimed</em></u> to bring the best products and services <u><em>B</em></u> <u><em>C on</em></u> the doorstep of <u><em>D their consumers</em></u>", options:["A","B","C","D"]},
+  {q:"Identify the errors:", stem:"It is raining. Mohan and Sumesh were walking on the park. The path is wet. Mohan slips and fell.", options:["raining, were, on","were, on, fell","were, on, slips","were, slips, fell"]},
+  {q:"Choose the most appropriate clause:", stem:"Madhu met a girl with blue eyes.", options:["Whose eyes are blue","Whose eyes were blue","Those eyes were blue","Those eyes are blue"]},
+  {q:"In the sentence 'The train came rushing down the hill', the word 'down' functions as —", stem:"", options:["Noun","Preposition","Verb","Adverb"]},
+  {q:"Fill in the blank:", stem:"Smt. Sheela became <span class='blank'></span> Principal of the College in 2005.", options:["a","the","an","no article"]},
+  {q:"Pick the odd one:", stem:"Pretty, attractive, beautiful, smart, lively", options:["Attractive","Lively","Beautiful","Pretty"]},
+  {q:"Which of the following is not an instruction?", stem:"", options:["What an idea","Sit down","Be silent","Queue up"]},
+  {q:"Which one of the following statements is correct?", stem:"", options:["An engine driver cannot be compared to Plato or Socrates","Plato or Socrates is in no way inferior to the engine driver","Plato or Socrates surpassed the engine driver in every respect","An engine driver is cleverer than Plato or Socrates"]},
+  {q:"People today are very proud because they —", stem:"", options:["live in a philosophically advanced age","live in a spiritually advanced age","enjoy digital communications","live in a scientifically advanced age"]},
+  {q:"Many of us make use of machines —", stem:"", options:["with full knowledge of their genesis","without knowing how they were invented","with very little knowledge of their mechanism","without any knowledge of their historical significance"]},
+  {q:"Plato and Socrates are mentioned to emphasize that —", stem:"", options:["They had a great respect for learning","They were men of great scholarship","People as individuals today are not more advanced than their predecessors","The engine is a better mode of locomotion"]},
+  {q:"The phrase 'height of absurdity' implies —", stem:"", options:["The possible extent of rationality","The impossible extent of rationality","The possible extent of irrationality","The impossible extent of rationality"]},
+  {q:"If a medal is an award made of gold, silver or bronze, choose the homophone:", stem:"", options:["Meddle","Muddle","Middle","Medel"]},
+  {q:"Verbal guidance is least effective in the learning of —", stem:"", options:["Attitudes","Relationships","Skills","Facts"]},
+  {q:"My landlady was very <span class='blank'></span> when I met with an accident.", stem:"", options:["Merciful","Pitiful","Sympathetic","Hearty"]},
+  {q:"The receptionist <span class='blank'></span> to ring another hotel.", stem:"", options:["Offered","Suggested","Recommended","Invited"]},
+  {q:"I assure you I have no wish to <span class='blank'></span> my responsibility.", stem:"", options:["Shirk","Refuse","Abandon","Disobey"]},
+  {q:"Has there been any <span class='blank'></span> on the strike from the Government?", stem:"", options:["Reaction","Response","Comment","Criticism"]},
+  {q:"The boy backed up his friend's claim. The idiom means —", stem:"", options:["Accepted","Supported","Explained","Denied"]},
+  {q:"Choose the appropriate tag:", stem:"Have some rice, <span class='blank'></span>?", options:["Will you","Shall you","May you","Won't you"]},
+  {q:"Fill the blanks:", stem:"I met a boy <span class='blank'></span> told me <span class='blank'></span> I could find you.", options:["Who, were","That, were","That, where","Who, where"]},
+  {q:"Dr. A.P.J. Abdul Kalam has consented to address students. Which discourse is best for informing parents?", stem:"", options:["Letter","Diary","Notice","Slogan"]},
+  {q:"How many syllables are there in the word 'examination'?", stem:"", options:["4","3","5","6"]}
 ];
 
 const correctAnswers = [
-  "3", // Q1: option 3 ("giving")
-  "did you wake up", // Q2: b
-  "played", // Q3: a
-  "little", // Q4: d
-  "for", // Q5: b
-  "sleeps at night and is awake during the day.", // Q6: a
-  "can see very well at night.", // Q7: b
-  "sight and sound.", // Q8: b
-  "An animal that is hunted by other animals.", // Q9: c
-  "stay awake at night.", // Q10: b
-  "mice can hide from owls.", // Q11: b
-  "Some animals are nocturnal. This means they are active at night. The owl and the mouse are good examples of animals that use their senses to find food in the dark.", // Q12: c
-  "Where are the children sitting?", // Q13: c
-  "I – blood", // Q14: a
-  "IV – dear", // Q15: d
-  "II – jumped", // Q16: b
-  "1", // Q17: a
-  "fit", // Q18: d
-  "safe", // Q19: c
-  "strange", // Q20: a
-  "apologising", // Q21: a
-  "suggesting", // Q22: c
-  "hasn’t she", // Q23: d
-  "was he", // Q24: a
-  "What is Hari writing?", // Q25: b
-  "with", // Q26: d
-  "am", // Q27: b
-  "The game was won by the Blue team.", // Q28: d
-  "Renu asked me if the movie was interesting.", // Q29: a
-  "rarely" // Q30: b
+  "C", // Q1: c - latter
+  "B", // Q2: b - Promises should be kept
+  "D", // Q3: d - We must eat to live
+  "D", // Q4: d - Professional
+  "C", // Q5: c - Yours truly
+  "C", // Q6: c - RPSQ
+  "B", // Q7: B - will get should be get
+  "D", // Q8: D - their consumers should be its consumers
+  "D", // Q9: d - were, slips, fell
+  "B", // Q10: b - Whose eyes were blue
+  "D", // Q11: d - Adverb
+  "D", // Q12: d - no article
+  "B", // Q13: b - Lively
+  "A", // Q14: a - What an idea
+  "B", // Q15: b - Plato or Socrates is in no way inferior to the engine driver
+  "D", // Q16: d - live in a scientifically advanced age
+  "B", // Q17: b - without knowing how they were invented
+  "C", // Q18: c - People as individuals today are not more advanced than their predecessors
+  "D", // Q19: d - The impossible extent of rationality
+  "A", // Q20: a - Meddle
+  "C", // Q21: c - Skills
+  "C", // Q22: c - Sympathetic
+  "A", // Q23: a - Offered
+  "A", // Q24: a - Shirk
+  "C", // Q25: c - Comment
+  "B", // Q26: b - Supported
+  "A", // Q27: a - Will you
+  "D", // Q28: d - Who, where
+  "C", // Q29: c - Notice
+  "C" // Q30: c - 5
 ];
 
 function startQuiz(){
@@ -281,60 +357,126 @@ function buildQuestionGrid(){
     btn.id = 'qbtn'+i;
     btn.innerText = i+1;
     btn.className = 'unanswered';
-    btn.onclick = ()=>{currentQuestion=i; showQuestion(i);}
+    btn.onclick = ()=>{
+      // Add click animation
+      btn.style.transform = 'scale(0.9)';
+      setTimeout(() => {
+        btn.style.transform = 'scale(1)';
+        currentQuestion=i; 
+        showQuestion(i);
+      }, 100);
+    }
+    // Add staggered entrance animation
+    btn.style.opacity = '0';
+    btn.style.transform = 'translateY(20px)';
+    setTimeout(() => {
+      btn.style.opacity = '1';
+      btn.style.transform = 'translateY(0)';
+    }, i * 50);
+    
     grid.appendChild(btn);
   }
 }
 
 function showQuestion(index){
+  // Add smooth transition effect
+  const questionArea = document.getElementById('question-area');
+  questionArea.style.opacity = '0.6';
+  questionArea.style.transform = 'translateY(10px)';
 
-  // Show passage only for Q6–Q12 (index 5–11)
-  if (index >= 5 && index <= 11) {
-    document.getElementById('passage-section').style.display = 'block';
-  } else {
-    document.getElementById('passage-section').style.display = 'none';
-  }
+  setTimeout(() => {
+    // Show passage only for Q15–Q19 (index 14–18)
+    if (index >= 14 && index <= 18) {
+      document.getElementById('passage-section').style.display = 'block';
+    } else {
+      document.getElementById('passage-section').style.display = 'none';
+    }
 
-  let q = questions[index];
-  let html = `<div><b>Q${index+1}. ${q.q}</b></div>`;
-  if (q.stem && (index === 20 || index === 21)) {
-    // For Q21 and Q22, split stem by \n and render as a single block with <br>
-    const lines = q.stem.split('\n');
-    html += `<div>${lines.map(line => line.trim()).join('<br>')}</div>`;
-  } else {
+    let q = questions[index];
+    let html = `<div><b>Q${index+1}. ${q.q}</b></div>`;
     html += `<div>${q.stem}</div>`;
-  }
-  const optionCodes = ['a)', 'b)', 'c)', 'd)'];
-  for(let i=0;i<q.options.length;i++){
-    html += `<div class="option-div"><input type="radio" name="option" id="opt${i}" value="${q.options[i]}" ${selectedAnswers[index]===q.options[i]?'checked':''} onclick="selectOption('${q.options[i]}')"> <label for="opt${i}">${optionCodes[i] ? optionCodes[i] : String.fromCharCode(97+i)+')'} ${q.options[i]}</label></div>`;
-  }
-  document.getElementById('question-area').innerHTML = html;
+    const optionCodes = ['a)', 'b)', 'c)', 'd)'];
+    for(let i=0;i<q.options.length;i++){
+      let optionCode = String.fromCharCode(65 + i); // A, B, C, D
+      let isSelected = selectedAnswers[index] === optionCode;
+      html += `<div class="option-div"><input type="radio" name="option" id="opt${i}" value="${q.options[i]}" ${isSelected?'checked':''} onclick="selectOption('${q.options[i]}')"> <label for="opt${i}">${optionCodes[i] ? optionCodes[i] : String.fromCharCode(97+i)+')'} ${q.options[i]}</label></div>`;
+    }
+    questionArea.innerHTML = html;
+    
+    // Update mark button text
+    const markBtn = document.getElementById('mark-btn');
+    if (markedQuestions[index]) {
+      markBtn.textContent = 'Unmark Review';
+      markBtn.className = 'btn btn-secondary me-2';
+    } else {
+      markBtn.textContent = 'Mark for Review';
+      markBtn.className = 'btn btn-warning me-2';
+    }
+    
+    // Animate back in
+    questionArea.style.opacity = '1';
+    questionArea.style.transform = 'translateY(0)';
+  }, 150);
 }
 
 function selectOption(val){
-  selectedAnswers[currentQuestion] = val;
+  // Add visual feedback for selection
+  const optionDivs = document.querySelectorAll('.option-div');
+  optionDivs.forEach(div => {
+    div.style.transform = 'scale(0.98)';
+    setTimeout(() => {
+      div.style.transform = 'scale(1)';
+    }, 100);
+  });
+
+  // Convert answer to option code (A, B, C, D)
+  let q = questions[currentQuestion];
+  let optionIndex = q.options.indexOf(val);
+  let optionCode = String.fromCharCode(65 + optionIndex); // A=65, B=66, C=67, D=68
+  selectedAnswers[currentQuestion] = optionCode;
   updateGridStatus();
 }
 
 function updateGridStatus(){
+  let answeredCount = 0;
   for(let i=0;i<30;i++){
     let btn = document.getElementById('qbtn'+i);
     if(markedQuestions[i]) btn.className='marked';
-    else if(selectedAnswers[i]) btn.className='answered';
+    else if(selectedAnswers[i]) {
+      btn.className='answered';
+      answeredCount++;
+    }
     else btn.className='unanswered';
   }
+  document.getElementById('answered-count').textContent = answeredCount;
+  document.getElementById('unanswered-count').textContent = 30 - answeredCount;
 }
 
 function nextQuestion(){ if(currentQuestion<29){ currentQuestion++; showQuestion(currentQuestion);} }
 function prevQuestion(){ if(currentQuestion>0){ currentQuestion--; showQuestion(currentQuestion);} }
-function markForReview(){ markedQuestions[currentQuestion]=true; updateGridStatus(); }
+function toggleMarkForReview(){ 
+  markedQuestions[currentQuestion] = !markedQuestions[currentQuestion]; 
+  updateGridStatus();
+  showQuestion(currentQuestion); // Refresh to update button text
+}
 
 function startTimer(){
   timerInterval = setInterval(()=>{
     timeLeft--;
     let min=Math.floor(timeLeft/60);
     let sec=timeLeft%60;
-    document.getElementById('timer').innerText=`Time Remaining: ${min}:${sec<10?'0'+sec:sec}`;
+    const timerEl = document.getElementById('timer');
+    timerEl.innerText=`Time Remaining: ${min}:${sec<10?'0'+sec:sec}`;
+    
+    // Add warning classes based on time left
+    timerEl.classList.remove('warning', 'danger');
+    if (timeLeft <= 300) { // 5 minutes
+      timerEl.classList.add('warning');
+    }
+    if (timeLeft <= 60) { // 1 minute
+      timerEl.classList.add('danger');
+    }
+    
     document.getElementById('timerBar').style.width=(timeLeft/1800*100)+'%';
     if(timeLeft<=0){ clearInterval(timerInterval); submitQuiz();}
   },1000);
@@ -353,9 +495,13 @@ function sendToGoogleSheet() {
   const attempted = selectedAnswers.filter(a => a !== null).length;
   const unattempted = 30 - attempted;
   const score = document.getElementById('score').innerText;
-  const timeTaken = (1800 - timeLeft) + " seconds";
+  const timeTakenSeconds = 1800 - timeLeft;
+  const minutes = Math.floor(timeTakenSeconds / 60);
+  const seconds = timeTakenSeconds % 60;
+  const timeTaken = `${minutes}.${seconds.toString().padStart(2, '0')}`;
 
   const payload = {
+    quizName: "Test2",
     name,
     email,
     phone,
@@ -396,13 +542,25 @@ function showResult(){
   let html="";
   for(let i=0;i<30;i++){
     let q=questions[i];
-    let user=selectedAnswers[i];
-    let correct=correctAnswers[i];
-    if(user==correct) score++;
-    html+=`<p><b>Q${i+1}:</b> ${q.stem}<br> Your answer: <span class="${user==correct?'correct':'wrong'}">${user?user:'Not answered'}</span> | Correct: ${correct}</p>`;
+    let userCode=selectedAnswers[i];
+    let correctCode=correctAnswers[i];
+    if(userCode==correctCode) score++;
+    
+    // Get full text for display with option codes
+    let userText = userCode ? q.options[userCode.charCodeAt(0) - 65] || 'Invalid' : 'Not answered';
+    let correctText = q.options[correctCode.charCodeAt(0) - 65] || 'Invalid';
+    
+    // Display format: "A) Full answer text"
+    let userDisplay = userCode ? `${userCode}) ${userText}` : 'Not answered';
+    let correctDisplay = `${correctCode}) ${correctText}`;
+    
+    html+=`<p><b>Q${i+1}:</b> ${q.stem}<br> Your answer: <span class="${userCode==correctCode?'correct':'wrong'}">${userDisplay}</span> | Correct: ${correctDisplay}</p>`;
   }
   document.getElementById('score').innerText=score;
-  document.getElementById('time-taken').innerText=(1800-timeLeft)+" seconds";
+  let timeTakenSeconds = 1800-timeLeft;
+  let minutes = Math.floor(timeTakenSeconds / 60);
+  let seconds = timeTakenSeconds % 60;
+  document.getElementById('time-taken').innerText=`${minutes}.${seconds.toString().padStart(2, '0')}`;
   document.getElementById('answer-review').innerHTML=html;
 }
 
@@ -508,12 +666,19 @@ function downloadPDF(){
   // Results table 30 rows, auto-adjust height for wrapped text
   for(let i=0;i<30;i++){
     let q=questions[i];
-    let user=selectedAnswers[i];
-    let correct=correctAnswers[i];
-    let correctText = stripHTML(correct);
-    let userText = stripHTML(user ? user : 'Not answered');
-    let correctLines = doc.splitTextToSize(correctText, resW[1]-4);
-    let userLines = doc.splitTextToSize(userText, resW[2]-4);
+    let userCode=selectedAnswers[i];
+    let correctCode=correctAnswers[i];
+    
+    // Get full text for PDF display with option codes
+    let userText = userCode ? q.options[userCode.charCodeAt(0) - 65] || 'Invalid' : 'Not answered';
+    let correctText = q.options[correctCode.charCodeAt(0) - 65] || 'Invalid';
+    
+    // Format for PDF: "A) Full answer text"
+    let userDisplay = userCode ? `${userCode}) ${userText}` : 'Not answered';
+    let correctDisplay = `${correctCode}) ${correctText}`;
+    
+    let correctLines = doc.splitTextToSize(stripHTML(correctDisplay), resW[1]-4);
+    let userLines = doc.splitTextToSize(stripHTML(userDisplay), resW[2]-4);
     let rowHeight = Math.max(correctLines.length, userLines.length, 1)*6+2;
     // Draw row
     doc.rect(10, y, resW[0], rowHeight);
@@ -521,7 +686,7 @@ function downloadPDF(){
     doc.rect(10+resW[0]+resW[1], y, resW[2], rowHeight);
     doc.text(`${i+1}`, 12, y+7);
     doc.text(correctLines, 12+resW[0], y+7);
-    if(user==correct){
+    if(userCode==correctCode){
       doc.setTextColor(0,128,0);
     }else{
       doc.setTextColor(220,0,0);
@@ -638,9 +803,13 @@ function sendToGoogleSheet() {
   const attempted = selectedAnswers.filter(a => a !== null).length;
   const unattempted = 30 - attempted;
   const score = document.getElementById('score').innerText;
-  const timeTaken = (1800 - timeLeft) + " seconds";
+  const timeTakenSeconds = 1800 - timeLeft;
+  const minutes = Math.floor(timeTakenSeconds / 60);
+  const seconds = timeTakenSeconds % 60;
+  const timeTaken = `${minutes}.${seconds.toString().padStart(2, '0')}`;
 
   const payload = {
+    quizName: "Test2",
     name,
     email,
     phone,

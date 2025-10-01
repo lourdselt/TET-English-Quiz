@@ -3,60 +3,45 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TET Quiz</title>
+<title>test-01</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script>
+function getQuizName(){
+  try{
+    let tn = (document.title || "").trim();
+    if(!tn){ tn = (location.pathname.split('/').pop() || '').replace(/\.[^.]+$/, ''); }
+    tn = tn || 'test-01';
+    // Return the title/filename as the sheet tab name (no legacy mapping)
+    return tn;
+  }catch(e){ return 'Test1'; }
+}
 function sendToGoogleSheet() {
+  if(!window.candidateInfo){ console.warn('No candidateInfo; skipping sheet send'); return; }
   const { name, email, phone, subject } = window.candidateInfo;
   const attempted = selectedAnswers.filter(a => a !== null).length;
   const unattempted = 30 - attempted;
   const score = document.getElementById('score').innerText;
-  const timeTaken = (1800 - timeLeft) + " seconds";
-
-  const payload = {
-    name,
-    email,
-    phone,
-    subject,
-    attempted,
-    unattempted,
-    score,
-    timeTaken,
-    answers: selectedAnswers
-  };
-
-  fetch("https://script.google.com/macros/s/AKfycbyCIF0KcmXBrIMiam0rDzsZB61TzJCvWodzoea5PrJuTgceiif46_oDq4tJRMKypbH3-w/exec", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  })
-  .then(res => res.text())
-  .then(txt => console.log("Sheet response:", txt))
-  .catch(err => console.error("Error sending to sheet:", err));
+  const elapsedSec = 1800 - timeLeft;
+  const timeReadable = `${String(Math.floor(elapsedSec/60)).padStart(2,'0')}:${String(elapsedSec%60).padStart(2,'0')}`;
+  const timeTaken = timeReadable;
+  const answers = selectedAnswers.map((idx) => idx===null?"":['A','B','C','D'][idx]);
+  const answersCsv = answers.join(',');
+  const answerTexts = selectedAnswers.map((idx,i)=> (idx!==null && questions[i] && questions[i].options[idx])? questions[i].options[idx] : "");
+  console.log('Selected indices:', JSON.stringify(selectedAnswers));
+  console.log('Answer codes to send:', JSON.stringify(answers));
+  const payload = { quizName: getQuizName(), name, email, phone, subject, attempted, unattempted, score, timeTaken, timeTakenReadable: timeReadable, answers, answerCodes: answers, answersCsv, answerCodesCsv: answersCsv, answerTexts };
+  fetch("https://script.google.com/macros/s/AKfycbyeVJR0A_CvLsIXQvx5IN7zcPK66T0Uy3B09kasOSgXnxGp8LaepjmIt-IXwA3d0rHiUw/exec", {
+    method: "POST", body: JSON.stringify(payload), mode: "no-cors"
+  }).then(() => console.log("Sheet submission sent")).catch(err => console.error("Error sending to sheet:", err));
 }
-
 </script>
 <style>
-  em {
-    font-family: 'Roboto', Arial, sans-serif;
-    font-style: italic;
-    font-weight: bold;
-    font-size: 1.05em;
-    color: #2a2a2a;
-  }
-  .blank {
-    display: inline-block;
-    border-bottom: 1px solid #333;
-    min-width: 60px;
-    height: 1.2em;
-    vertical-align: middle;
-    margin: 0 4px;
-  }
-  body, #quiz, #question-area, .option-div, .timer {
-    font-family: 'Roboto', Arial, sans-serif;
-    background:#f0f2f5;
-  }
+  em { font-family: 'Roboto', Arial, sans-serif; font-style: italic; font-weight: bold; font-size: 1.05em; color: #2a2a2a; }
+  .blank { display: inline-block; border-bottom: 1px solid #333; min-width: 60px; height: 1.2em; vertical-align: middle; margin: 0 4px; }
+  body, #quiz, #question-area, .option-div, .timer { font-family: 'Roboto', Arial, sans-serif; background:#f0f2f5; }
   #question-grid button { width: 30px; height: 30px; margin: 2px; color: white; font-weight: bold; border-radius: 4px; border: none; font-size: 12px; }
   .unanswered { background-color: #dc3545; }
   .answered { background-color: #28a745; }
@@ -66,57 +51,22 @@ function sendToGoogleSheet() {
   .correct { color: green; font-weight: bold; }
   .wrong { color: red; font-weight: bold; }
   .progress { height: 20px; margin-bottom: 15px; }
-  .option-div {
-    margin: 0 0 0 8px;
-    padding: 0;
-    line-height: 1.2;
-    display: flex;
-    align-items: center;
-  }
+  .option-div { margin: 0 0 0 8px; padding: 0; line-height: 1.2; display: flex; align-items: center; }
   .option-div label { display: inline; margin-left: 6px; }
-  #result { position: relative; }
-  /* Use a real image watermark instead of pseudo-element text */
-  #result .card { position: relative; z-index: 1; }
-  .logo-watermark {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) rotate(-30deg);
-    width: 300px; /* adjust as needed */
-    opacity: 0.08;
-    pointer-events: none;
-    z-index: 0;
-    display: none;
-  }
-
-  /* Fixed site header to show brand and test name across all pages */
-  .site-header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 56px;
-    background: #fff;
-    border-bottom: 1px solid #e6e6e6;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 16px;
-    z-index: 1100;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
-  }
+  .site-header { position: fixed; top: 0; left: 0; right: 0; height: 56px; background: #fff; border-bottom: 1px solid #e6e6e6; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; z-index: 1100; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
   .site-header .brand { font-weight: 700; font-size: 1.05rem; color: #222; }
   .site-header .testname { font-size: 0.95rem; color: #555; }
-  /* Ensure page content is not hidden behind fixed header */
   body { padding-top: 72px; }
+  /* Result card watermark sizing and placement */
+  #result .card { position: relative; overflow: hidden; }
+  .logo-watermark { position: absolute; right: 12px; top: 12px; width: 80px; height: auto; opacity: 0.12; pointer-events: none; filter: grayscale(100%); }
 </style>
 </head>
 <body>
-  <!-- Fixed header visible on every page -->
-  <header class="site-header" role="banner" aria-label="Site header">
-    <div class="brand">LOURDS ENGLISH ACADEMY</div>
-    <div id="test-name" class="testname"></div>
-  </header>
+<header class="site-header" role="banner" aria-label="Site header">
+  <div class="brand">LOURDS ENGLISH ACADEMY</div>
+  <div id="test-name" class="testname"></div>
+</header>
 
 <div class="container my-4">
   <div id="login" class="card p-4 shadow">
@@ -124,11 +74,13 @@ function sendToGoogleSheet() {
     <input type="text" id="name" class="form-control mb-2" placeholder="Name" required>
     <input type="email" id="email" class="form-control mb-2" placeholder="Email" required>
     <input type="tel" id="phone" class="form-control mb-2" placeholder="Phone Number" required>
-    <select id="subject" class="form-select mb-2" required>
+    <select id="subject" class="form-select mb-2" required onchange="onSubjectChange()">
       <option value="">Select Subject</option>
       <option>Tamil</option><option>English</option><option>Maths</option><option>Physics</option>
       <option>Chemistry</option><option>Botony</option><option>Zoology</option><option>History</option><option>Geography</option>
+      <option value="Other">Other</option>
     </select>
+    <input type="text" id="subject-other" class="form-control mb-2" placeholder="Enter subject (if Other)" style="display:none;" />
     <button class="btn btn-primary mt-2" onclick="startQuiz()">Start Quiz</button>
   </div>
 </div>
@@ -170,8 +122,7 @@ function sendToGoogleSheet() {
 
 <div id="result" class="container my-4" style="display:none;">
   <div class="card p-4 shadow">
-    <!-- watermark image (will be set from lourds_logo_base64.txt at runtime) -->
-    <img id="logo-watermark" class="logo-watermark" alt="watermark logo">
+    <img id="logo-watermark" class="logo-watermark" alt="watermark logo" style="display:none;">
     <h3 class="mb-3">Quiz Result</h3>
     <p id="candidate-details"></p>
     <p>Total Questions: 30</p>
@@ -186,6 +137,7 @@ function sendToGoogleSheet() {
 
 <script>
 let currentQuestion = 0;
+// Store selected answers as option INDEX (0-3) to avoid HTML escaping issues
 let selectedAnswers = Array(30).fill(null);
 let markedQuestions = Array(30).fill(false);
 let timerInterval;
@@ -223,38 +175,37 @@ const questions = [
   {q:"The reported form of the question “Renu said to me, ‘Is the movie interesting?’” is:", stem:"", options:["Renu asked me if the movie was interesting.","Renu asked me if the movie has been interesting.","Renu asked me if the movie is interesting.","Renu asked me if the movie had been interesting."]},
   {q:"Choose the word which has almost the same meaning as the italicized one:", stem:"She <em>seldom</em> goes to conferences", options:["nearly","rarely","slightly","incredibly"]}
 ];
-
 const correctAnswers = [
-  "3", // Q1: option 3 ("giving")
-  "did you wake up", // Q2: b
-  "played", // Q3: a
-  "little", // Q4: d
-  "for", // Q5: b
-  "sleeps at night and is awake during the day.", // Q6: a
-  "can see very well at night.", // Q7: b
-  "sight and sound.", // Q8: b
-  "An animal that is hunted by other animals.", // Q9: c
-  "stay awake at night.", // Q10: b
-  "mice can hide from owls.", // Q11: b
-  "Some animals are nocturnal. This means they are active at night. The owl and the mouse are good examples of animals that use their senses to find food in the dark.", // Q12: c
-  "Where are the children sitting?", // Q13: c
-  "I – blood", // Q14: a
-  "IV – dear", // Q15: d
-  "II – jumped", // Q16: b
-  "1", // Q17: a
-  "fit", // Q18: d
-  "safe", // Q19: c
-  "strange", // Q20: a
-  "apologising", // Q21: a
-  "suggesting", // Q22: c
-  "hasn’t she", // Q23: d
-  "was he", // Q24: a
-  "What is Hari writing?", // Q25: b
-  "with", // Q26: d
-  "am", // Q27: b
-  "The game was won by the Blue team.", // Q28: d
-  "Renu asked me if the movie was interesting.", // Q29: a
-  "rarely" // Q30: b
+  "3",
+  "did you wake up",
+  "played",
+  "little",
+  "for",
+  "sleeps at night and is awake during the day.",
+  "can see very well at night.",
+  "sight and sound.",
+  "An animal that is hunted by other animals.",
+  "stay awake at night.",
+  "mice can hide from owls.",
+  "Some animals are nocturnal. This means they are active at night. The owl and the mouse are good examples of animals that use their senses to find food in the dark.",
+  "Where are the children sitting?",
+  "I – blood",
+  "IV – dear",
+  "II – jumped",
+  "1",
+  "fit",
+  "safe",
+  "strange",
+  "apologising",
+  "suggesting",
+  "hasn’t she",
+  "was he",
+  "What is Hari writing?",
+  "with",
+  "am",
+  "The game was won by the Blue team.",
+  "Renu asked me if the movie was interesting.",
+  "rarely"
 ];
 
 function startQuiz(){
@@ -262,6 +213,11 @@ function startQuiz(){
   let email = document.getElementById('email').value.trim();
   let phone = document.getElementById('phone').value.trim();
   let subject = document.getElementById('subject').value;
+  if (subject === 'Other') {
+    const otherVal = (document.getElementById('subject-other').value || '').trim();
+    if (!otherVal) { alert('Please type your subject'); return; }
+    subject = otherVal;
+  }
   if(!name || !email || !phone || !subject){ alert("Please fill all details"); return;}
   window.candidateInfo = {name,email,phone,subject};
   document.getElementById('login').style.display='none';
@@ -269,6 +225,14 @@ function startQuiz(){
   buildQuestionGrid();
   showQuestion(currentQuestion);
   startTimer();
+}
+
+function onSubjectChange(){
+  const sel = document.getElementById('subject');
+  const other = document.getElementById('subject-other');
+  if (!sel || !other) return;
+  if (sel.value === 'Other') { other.style.display = ''; other.focus(); }
+  else { other.style.display = 'none'; other.value = ''; }
 }
 
 function buildQuestionGrid(){
@@ -284,66 +248,36 @@ function buildQuestionGrid(){
 }
 
 function showQuestion(index){
-
-  // Show passage only for Q6–Q12 (index 5–11)
   if (index >= 5 && index <= 11) {
     document.getElementById('passage-section').style.display = 'block';
   } else {
     document.getElementById('passage-section').style.display = 'none';
   }
-
   let q = questions[index];
   let html = `<div><b>Q${index+1}. ${q.q}</b></div>`;
-  if (q.stem && (index === 20 || index === 21)) {
-    // For Q21 and Q22, split stem by \n and render as a single block with <br>
-    const lines = q.stem.split('\n');
-    html += `<div>${lines.map(line => line.trim()).join('<br>')}</div>`;
-  } else {
-    html += `<div>${q.stem}</div>`;
-  }
+  html += `<div>${q.stem || ''}</div>`;
   const optionCodes = ['a)', 'b)', 'c)', 'd)'];
   for(let i=0;i<q.options.length;i++){
-    html += `<div class="option-div"><input type="radio" name="option" id="opt${i}" value="${q.options[i]}" ${selectedAnswers[index]===q.options[i]?'checked':''} onclick="selectOption('${q.options[i]}')"> <label for="opt${i}">${optionCodes[i] ? optionCodes[i] : String.fromCharCode(97+i)+')'} ${q.options[i]}</label></div>`;
+    const checked = selectedAnswers[index] === i ? 'checked' : '';
+    html += `<div class="option-div"><input type="radio" name="option" id="opt${i}" value="${i}" ${checked} onclick="selectOptionIndex(${i})"> <label for="opt${i}">${optionCodes[i]} ${q.options[i]}</label></div>`;
   }
   document.getElementById('question-area').innerHTML = html;
 }
 
-function selectOption(val){
-  selectedAnswers[currentQuestion] = val;
-  updateGridStatus();
-}
-
+function selectOptionIndex(idx){ selectedAnswers[currentQuestion] = idx; updateGridStatus(); }
 function updateGridStatus(){
   for(let i=0;i<30;i++){
     let btn = document.getElementById('qbtn'+i);
     if(markedQuestions[i]) btn.className='marked';
-    else if(selectedAnswers[i]) btn.className='answered';
+    else if(selectedAnswers[i] !== null) btn.className='answered';
     else btn.className='unanswered';
   }
 }
-
 function nextQuestion(){ if(currentQuestion<29){ currentQuestion++; showQuestion(currentQuestion);} }
 function prevQuestion(){ if(currentQuestion>0){ currentQuestion--; showQuestion(currentQuestion);} }
 function markForReview(){ markedQuestions[currentQuestion]=true; updateGridStatus(); }
-
-function startTimer(){
-  timerInterval = setInterval(()=>{
-    timeLeft--;
-    let min=Math.floor(timeLeft/60);
-    let sec=timeLeft%60;
-    document.getElementById('timer').innerText=`Time Remaining: ${min}:${sec<10?'0'+sec:sec}`;
-    document.getElementById('timerBar').style.width=(timeLeft/1800*100)+'%';
-    if(timeLeft<=0){ clearInterval(timerInterval); submitQuiz();}
-  },1000);
-}
-
-function submitQuiz(){
-  clearInterval(timerInterval);
-  document.getElementById('quiz').style.display='none';
-  document.getElementById('result').style.display='block';
-  showResult();
-  sendToGoogleSheet();
-}
+function startTimer(){ timerInterval = setInterval(()=>{ timeLeft--; let min=Math.floor(timeLeft/60); let sec=timeLeft%60; document.getElementById('timer').innerText=`Time Remaining: ${min}:${sec<10?'0'+sec:sec}`; document.getElementById('timerBar').style.width=(timeLeft/1800*100)+'%'; if(timeLeft<=0){ clearInterval(timerInterval); submitQuiz();}},1000); }
+function submitQuiz(){ clearInterval(timerInterval); document.getElementById('quiz').style.display='none'; document.getElementById('result').style.display='block'; showResult(); sendToGoogleSheet(); }
 
 function showResult(){
   let {name,email,phone,subject} = window.candidateInfo;
@@ -355,240 +289,220 @@ function showResult(){
   let html="";
   for(let i=0;i<30;i++){
     let q=questions[i];
-    let user=selectedAnswers[i];
-    let correct=correctAnswers[i];
-    if(user==correct) score++;
-    html+=`<p><b>Q${i+1}:</b> ${q.stem}<br> Your answer: <span class="${user==correct?'correct':'wrong'}">${user?user:'Not answered'}</span> | Correct: ${correct}</p>`;
+    let userIdx=selectedAnswers[i];
+    const norm = (s)=> (""+s).replace(/\s+/g,' ').trim();
+    let correctIdx = Array.isArray(q.options) ? q.options.findIndex(o => norm(o)===norm(correctAnswers[i])) : -1;
+    if(userIdx!==null && userIdx===correctIdx) score++;
+    const userText = (userIdx!==null && q.options[userIdx]) ? q.options[userIdx] : 'Not answered';
+    const correctText = (correctIdx>=0 && q.options[correctIdx]) ? q.options[correctIdx] : correctAnswers[i];
+    const cls = (userIdx!==null && userIdx===correctIdx) ? 'correct' : 'wrong';
+    html+=`<p><b>Q${i+1}:</b> ${q.stem}<br> Your answer: <span class="${cls}">${userText}</span> | Correct: ${correctText}</p>`;
   }
   document.getElementById('score').innerText=score;
-  document.getElementById('time-taken').innerText=(1800-timeLeft)+" seconds";
+  const elapsedSec = 1800 - timeLeft;
+  const mm = Math.floor(elapsedSec/60);
+  const ss = elapsedSec % 60;
+  const timeReadable = `${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+  document.getElementById('time-taken').innerText = timeReadable;
   document.getElementById('answer-review').innerHTML=html;
 }
 
 function downloadPDF(){
   const { jsPDF } = window.jspdf;
-  // Use A4 size explicitly for alignment
   const doc = new jsPDF({format: 'a4', unit: 'mm'});
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  // Watermark: Bookman Old Style (simulate with Times Bold), two centered per page
-  // Draw one big watermark, diagonal, centered
-  // Draw one big watermark, diagonal, fully across page, centered
-  // Draw logo watermark in center
-  function drawLogoWatermark() {
-    // Use loaded base64 logo if available
-    if(window.logoBase64){
-      var img = 'data:image/png;base64,' + window.logoBase64;
-      doc.addImage(img, 'PNG', pageWidth/2-30, pageHeight/2-30, 60, 60, undefined, 'NONE');
-    }
-  }
-  drawLogoWatermark();
-  // All other text in Roboto
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(14);
-  doc.setFont(undefined, 'bold');
-  doc.text("LOURDS ENGLISH ACADEMY", pageWidth/2, 16, {align: "center"});
+  // Table geometry to keep summary perfectly aligned with table
+  const tableMarginLeft = 10;
+  const tableColumnWidths = [12, 85, 85]; // Q#, Your Answer, Correct Answer
+  const tableRightX = tableMarginLeft + tableColumnWidths.reduce((a,b)=>a+b,0);
+  // Helper: centered big watermark on a page
+  const drawCenteredWatermark = () => {
+    try {
+      // Use black variant (very low opacity) so it doesn't disturb text
+      const b64 = window.logoBlackBase64 || window.logoGreyBase64 || window.logoBase64;
+      if (!b64) return;
+      const imgEl = document.getElementById('logo-watermark');
+      const iw = (imgEl && imgEl.naturalWidth) ? imgEl.naturalWidth : 1000;
+      const ih = (imgEl && imgEl.naturalHeight) ? imgEl.naturalHeight : 1000;
+      const aspect = iw/ih;
+      const maxW = pageWidth * 0.6;
+      const maxH = pageHeight * 0.6;
+      let w = maxW; let h = w/aspect;
+      if (h > maxH) { h = maxH; w = h*aspect; }
+      const x = (pageWidth - w)/2;
+      const y = (pageHeight - h)/2;
+      if (doc.GState) { doc.setGState(new doc.GState({ opacity: 0.06 })); }
+      doc.addImage('data:image/png;base64,' + b64, 'PNG', x, y, w, h);
+      if (doc.GState) { doc.setGState(new doc.GState({ opacity: 1 })); }
+    } catch (_) {}
+  };
+  // Header with logo and title
+  const academy = "LOURDS ENGLISH ACADEMY";
+  try {
+    const headerB64 = window.logoBlackBase64 || window.logoGreyBase64 || window.logoBase64;
+    if (headerB64) { doc.addImage('data:image/png;base64,' + headerB64, 'PNG', 10, 8, 18, 18); }
+  } catch (_) {}
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text(academy, pageWidth/2, 16, {align: "center"});
   doc.setFontSize(12);
   doc.text(document.title || "Test Name", pageWidth/2, 22, {align: "center"});
-  doc.setFont(undefined, 'normal');
-  let y=28;
-  // Candidate details 4-column, 2-row table
-  let detailsHeaders = ["Name", "Email", "Phone Number", "Subject"];
-  let detailsValues = [window.candidateInfo.name, window.candidateInfo.email, window.candidateInfo.phone, window.candidateInfo.subject];
-  let cellW = (pageWidth-20)/4;
-  // Header row (light grey, black text)
-  for(let i=0;i<4;i++){
-    doc.setFillColor(230);
-    doc.setDrawColor(0);
-    doc.setTextColor(0);
-    doc.rect(10+cellW*i, y, cellW, 8, 'F');
-    doc.text(detailsHeaders[i], 12+cellW*i, y+6);
-  }
-  y+=8;
-  // Value row
-  for(let i=0;i<4;i++){
-    doc.setFillColor(255);
-    doc.setDrawColor(0);
-    doc.setTextColor(0);
-    doc.rect(10+cellW*i, y, cellW, 8, 'F');
-    doc.text(detailsValues[i], 12+cellW*i, y+6);
-  }
-  y+=10;
-  // Stats table 5 columns, 2 rows
-  let statsHeaders = ["Total Questions", "Attempted", "Unattempted", "Score", "Time Taken"];
-  let statsValues = [
-    "30",
-    `${selectedAnswers.filter(a=>a!==null).length}`,
-    `${30-selectedAnswers.filter(a=>a!==null).length}`,
-    `${document.getElementById('score').innerText} / 30`,
-    `${1800-timeLeft} seconds`
-  ];
-  let statW = (pageWidth-20)/5;
-  // Draw stats table with centered header and values, each cell bordered
-  // Header row
-  for(let i=0;i<5;i++){
-    doc.setFillColor(230);
-    doc.setDrawColor(0);
-    doc.setTextColor(0);
-    doc.rect(10+statW*i, y, statW, 8, 'FD');
-    doc.text(statsHeaders[i], 10+statW*i+statW/2, y+6, {align: "center"});
-  }
-  y+=8;
-  // Value row
-  for(let i=0;i<5;i++){
-    doc.setFillColor(255);
-    doc.setDrawColor(0);
-    doc.setTextColor(0);
-    doc.rect(10+statW*i, y, statW, 8, 'FD');
-    doc.text(statsValues[i], 10+statW*i+statW/2, y+6, {align: "center"});
-  }
-  y+=8;
-  y+=4;
-  // Helper to strip HTML
-  function stripHTML(html) {
-    var tmp = document.createElement("DIV");
-    tmp.innerHTML = html;
-    return tmp.textContent || tmp.innerText || "";
-  }
-  // Results table header (3 columns, black border, light grey fill)
-  let resW = [(pageWidth-20)*0.12, (pageWidth-20)*0.44, (pageWidth-20)*0.44];
-  doc.setFillColor(230);
-  doc.setDrawColor(0);
-  doc.setTextColor(0);
-  doc.rect(10, y, resW[0], 10, 'FD');
-  doc.rect(10+resW[0], y, resW[1], 10, 'FD');
-  doc.rect(10+resW[0]+resW[1], y, resW[2], 10, 'FD');
-  doc.setFont(undefined, 'bold');
-  doc.text("Q.No.", 12, y+7);
-  doc.text("Correct Answer", 12+resW[0], y+7);
-  doc.text("Your Answer", 12+resW[0]+resW[1], y+7);
-  doc.setFont(undefined, 'normal');
-  y+=10;
-  // Results table 30 rows, auto-adjust height for wrapped text
-  for(let i=0;i<30;i++){
-    let q=questions[i];
-    let user=selectedAnswers[i];
-    let correct=correctAnswers[i];
-    let correctText = stripHTML(correct);
-    let userText = stripHTML(user ? user : 'Not answered');
-    let correctLines = doc.splitTextToSize(correctText, resW[1]-4);
-    let userLines = doc.splitTextToSize(userText, resW[2]-4);
-    let rowHeight = Math.max(correctLines.length, userLines.length, 1)*6+2;
-    // Draw row
-    doc.rect(10, y, resW[0], rowHeight);
-    doc.rect(10+resW[0], y, resW[1], rowHeight);
-    doc.rect(10+resW[0]+resW[1], y, resW[2], rowHeight);
-    doc.text(`${i+1}`, 12, y+7);
-    doc.text(correctLines, 12+resW[0], y+7);
-    if(user==correct){
-      doc.setTextColor(0,128,0);
-    }else{
-      doc.setTextColor(220,0,0);
+
+  // Candidate details box
+  doc.setLineWidth(0.2);
+  // Draw divider line exactly the width of the table
+  doc.line(tableMarginLeft, 26, tableRightX, 26);
+  doc.setFontSize(10);
+  const metaY = 30;
+  const attempted = selectedAnswers.filter(a=>a!==null).length;
+  const unattempted = 30 - attempted;
+  const scoreText = document.getElementById('score').innerText + ' / 30';
+  const elapsedSecPDF = 1800 - timeLeft;
+  const timeReadablePDF = `${String(Math.floor(elapsedSecPDF/60)).padStart(2,'0')}:${String(elapsedSecPDF%60).padStart(2,'0')}`;
+  const timeText = `${timeReadablePDF}`;
+  const cd = window.candidateInfo || {name:'',email:'',phone:'',subject:''};
+  const leftX = tableMarginLeft, rightX = tableRightX;
+  // Left block
+  doc.text(`Name: ${cd.name || ''}`, leftX, metaY);
+  doc.text(`Email: ${cd.email || ''}`, leftX, metaY+6);
+  doc.text(`Phone: ${cd.phone || ''}`, leftX, metaY+12);
+  doc.text(`Subject: ${cd.subject || ''}`, leftX, metaY+18);
+  // Right block aligned to right edge of table
+  doc.text(`Attempted: ${attempted}`, rightX, metaY, { align: 'right' });
+  doc.text(`Unattempted: ${unattempted}`, rightX, metaY+6, { align: 'right' });
+  // Score in blue
+  doc.setTextColor(0, 102, 204);
+  doc.text(`Score: ${scoreText}`, rightX, metaY+12, { align: 'right' });
+  doc.setTextColor(0, 0, 0);
+  doc.text(`Time: ${timeText}`, rightX, metaY+18, { align: 'right' });
+
+  // Build table rows
+  const startY = metaY + 26;
+  const norm = (s)=> (""+s).replace(/\s+/g,' ').trim();
+  const rows = [];
+  const ansColors = []; // text color for 'Your Answer' cell per row
+  for (let i = 0; i < 30; i++) {
+    const q = questions[i];
+    const userIdx = selectedAnswers[i];
+    const correctIdx = Array.isArray(q.options) ? q.options.findIndex(o => norm(o) === norm(correctAnswers[i])) : -1;
+    const code = ['A','B','C','D'];
+    const youCode = (userIdx!==null && userIdx>=0) ? code[userIdx] : '';
+    const corrCode = (correctIdx>=0) ? code[correctIdx] : '';
+    const youText = (userIdx!==null && q.options[userIdx]) ? q.options[userIdx] : '';
+    const corrText = (correctIdx>=0 && q.options[correctIdx]) ? q.options[correctIdx] : correctAnswers[i];
+    // Decide color: grey for not answered, green for correct, red for wrong
+    let color = [130,130,130];
+    if (userIdx !== null) {
+      color = (userIdx === correctIdx) ? [0,128,0] : [200,0,0];
     }
-    doc.text(userLines, 12+resW[0]+resW[1], y+7);
-    doc.setTextColor(0);
-    y+=rowHeight;
-    if(y>pageHeight-30){
-      doc.addPage();
-      // ensure watermark on new page as well
-      drawLogoWatermark();
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(14);
-      doc.setFont(undefined, 'bold');
-      doc.text("LOURDS ENGLISH ACADEMY", pageWidth/2, 16, {align: "center"});
-      doc.setFontSize(12);
-      doc.text(document.title || "Test Name", pageWidth/2, 22, {align: "center"});
-      doc.setFont(undefined, 'normal');
-      y=28;
-      // Candidate details table
-      for(let i=0;i<4;i++){
-        doc.setFillColor(230);
-        doc.setDrawColor(0);
-        doc.setTextColor(0);
-        doc.rect(10+cellW*i, y, cellW, 8, 'F');
-        doc.text(detailsHeaders[i], 12+cellW*i, y+6);
+    ansColors.push(color);
+    rows.push([
+      (i+1).toString(),
+      youCode ? `${youCode}) ${youText}` : 'Not answered',
+      corrCode ? `${corrCode}) ${corrText}` : corrText
+    ]);
+  }
+
+  // Use autoTable for a clean table layout
+  if (doc.autoTable) {
+    doc.autoTable({
+      head: [['Q#', 'Your Answer', 'Correct Answer']],
+      body: rows,
+      startY: startY,
+      margin: { left: tableMarginLeft, right: 10 },
+      theme: 'grid',
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [33, 37, 41], halign: 'center', valign: 'middle', fontStyle: 'bold', textColor: 255 },
+      columnStyles: {
+        0: { halign: 'center', cellWidth: tableColumnWidths[0] },
+        1: { cellWidth: tableColumnWidths[1] },
+        2: { cellWidth: tableColumnWidths[2] }
+      },
+      didParseCell: function(data) {
+        if (data.section === 'body' && data.column.index === 1) {
+          const idx = data.row.index;
+          const col = ansColors[idx] || [0,0,0];
+          data.cell.styles.textColor = col;
+        }
+      },
+      didDrawPage: function(data) {
+        // Watermark for every page, draw after content with very low opacity
+        if (data.pageNumber && data.pageNumber >= 1) {
+          drawCenteredWatermark();
+        }
+        // Footer: timestamp left, page numbers right
+        const totalPages = doc.internal.getNumberOfPages();
+        const pageStr = 'Page ' + totalPages;
+        const now = new Date();
+        const ts = `${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        doc.setFontSize(9);
+        doc.text(ts, 10, pageHeight - 8);
+        doc.text(pageStr, pageWidth - 20, pageHeight - 8);
       }
-      y+=8;
-      for(let i=0;i<4;i++){
-        doc.setFillColor(255);
-        doc.setDrawColor(0);
-        doc.setTextColor(0);
-        doc.rect(10+cellW*i, y, cellW, 8, 'F');
-        doc.text(detailsValues[i], 12+cellW*i, y+6);
-      }
-      y+=10;
-      for(let i=0;i<5;i++){
-        doc.setFillColor(230);
-        doc.setDrawColor(0);
-        doc.setTextColor(0);
-        doc.rect(10+statW*i, y, statW, 8, 'F');
-        doc.text(statsHeaders[i], 12+statW*i, y+6);
-      }
-      y+=8;
-      for(let i=0;i<5;i++){
-        doc.setFillColor(255);
-        doc.setDrawColor(0);
-        doc.setTextColor(0);
-        doc.rect(10+statW*i, y, statW, 8, 'F');
-        doc.text(statsValues[i], 12+statW*i, y+6);
-      }
-      y+=12;
-      // Results table header
-      doc.setFillColor(230);
-      doc.setDrawColor(0);
-      doc.setTextColor(0);
-      doc.rect(10, y, resW[0], 10, 'FD');
-      doc.rect(10+resW[0], y, resW[1], 10, 'FD');
-      doc.rect(10+resW[0]+resW[1], y, resW[2], 10, 'FD');
-      doc.setFont(undefined, 'bold');
-      doc.text("Q.No.", 12, y+7);
-      doc.text("Correct Answer", 12+resW[0], y+7);
-      doc.text("Your Answer", 12+resW[0]+resW[1], y+7);
-      doc.setFont(undefined, 'normal');
-      y+=10;
+    });
+  } else {
+    // Fallback simple list if autotable isn't loaded
+    let y = startY;
+    for (const r of rows) {
+      const line = `${r[0]}. Your: ${r[1]} | Correct: ${r[2]}`;
+      const lines = doc.splitTextToSize(line, pageWidth - 20);
+      if (y + lines.length*6 > pageHeight - 14) { doc.addPage(); y = 14; }
+      doc.text(lines, 10, y);
+      y += lines.length*6;
     }
   }
-  // Footer: page number (left), timestamp (right)
-  let pageCount = doc.internal.getNumberOfPages();
-  for(let i=1;i<=pageCount;i++){
-    doc.setPage(i);
-    doc.setFontSize(10);
-    doc.text(`Page ${i}`, 10, pageHeight-2);
-    let now = new Date();
-    let ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-    doc.text(ts, pageWidth-50, pageHeight-2);
-  }
+
   doc.save("Quiz_Result.pdf");
 }
 
-// Set test name in header (use document.title, fallback to filename)
-(function(){
-  try {
-    var tn = document.title && document.title.trim() ? document.title.trim() : (location.pathname.split('/').pop() || '');
-    // remove extension if present
-    tn = tn.replace(/\.[^.]+$/, '');
-    document.getElementById('test-name').innerText = tn ? ('- ' + tn) : '';
-  } catch(e) { /* silent */ }
+// Set test name in header
+(function(){ try{ var tn=(document.title||'').trim() || (location.pathname.split('/').pop()||''); tn=tn.replace(/\.[^.]+$/,''); var el=document.getElementById('test-name'); if(el) el.innerText = tn?('- '+tn):''; }catch(e){} })();
+
+// Load watermark image and prepare grayscale/black variants for PDF and on-page rendering
+;(function(){
+  fetch('lourds_logo_base64.txt').then(r=>r.text()).then(t=>{
+    const raw=t.trim(); if(!raw) return;
+    window.logoBase64 = raw.replace(/^data:image\/[a-z]+;base64,/,'');
+    const img=new Image();
+    img.onload=function(){
+      try{
+        const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+        const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h; const ctx=canvas.getContext('2d');
+        ctx.drawImage(img,0,0,w,h);
+        const src=ctx.getImageData(0,0,w,h); const data=src.data;
+        const grayArr=new Uint8ClampedArray(data); const blackArr=new Uint8ClampedArray(data);
+        for(let i=0;i<data.length;i+=4){
+          const r=data[i], g=data[i+1], b=data[i+2], a=data[i+3];
+          const y=Math.round(0.299*r+0.587*g+0.114*b);
+          // grayscale for watermark
+          grayArr[i]=y; grayArr[i+1]=y; grayArr[i+2]=y; grayArr[i+3]=a;
+          // darkened grayscale for header icon
+          const yDark=Math.max(0,Math.min(255,Math.round(y*0.25)));
+          blackArr[i]=yDark; blackArr[i+1]=yDark; blackArr[i+2]=yDark; blackArr[i+3]=a;
+        }
+        const toB64=(arr)=>{ const c=document.createElement('canvas'); c.width=w; c.height=h; const cx=c.getContext('2d'); const id=cx.createImageData(w,h); id.data.set(arr); cx.putImageData(id,0,0); return c.toDataURL('image/png').replace(/^data:image\/png;base64,/, ''); };
+        window.logoGreyBase64=toB64(grayArr);
+        window.logoBlackBase64=toB64(blackArr);
+      }catch(e){}
+      const el=document.getElementById('logo-watermark');
+      if(el){ el.src='data:image/png;base64,'+(window.logoGreyBase64||window.logoBase64); el.style.display='block'; }
+    };
+    img.src='data:image/png;base64,'+window.logoBase64;
+  }).catch(()=>{});
 })();
 
-// Load base64 logo file (lourds_logo_base64.txt) from same folder and apply it as watermark.
-(function(){
-  fetch('lourds_logo_base64.txt')
-    .then(res => res.text())
-    .then(text => {
-      const b64 = text.trim();
-      if(!b64) return;
-      // strip any leading data: URI prefix if present
-      window.logoBase64 = b64.replace(/^data:image\/[a-z]+;base64,/, '');
-      const imgEl = document.getElementById('logo-watermark');
-      if(imgEl){
-        imgEl.src = 'data:image/png;base64,' + window.logoBase64;
-        imgEl.style.display = 'block';
-      }
-    })
-    .catch(err => { console.warn('Could not load logo base64:', err); });
-})();
+// Expose functions to window for inline handlers
+try {
+  window.startQuiz = startQuiz;
+  window.prevQuestion = prevQuestion;
+  window.nextQuestion = nextQuestion;
+  window.markForReview = markForReview;
+  window.submitQuiz = submitQuiz;
+  window.selectOptionIndex = selectOptionIndex;
+  window.downloadPDF = downloadPDF;
+  window.onSubjectChange = onSubjectChange;
+} catch(_){}
 </script>
-
 </body>
 </html>
