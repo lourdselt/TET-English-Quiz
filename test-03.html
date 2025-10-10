@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>test-03</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script>
+function getQuizName(){
+  try{
+    let tn = (document.title || "").trim();
+    if(!tn){ tn = (location.pathname.split('/').pop() || '').replace(/\.[^.]+$/, ''); }
+    tn = tn || 'test-03';
+    return tn;
+  }catch(e){ return 'test-03'; }
+}
+function sendToGoogleSheet() {
+  if(!window.candidateInfo){ console.warn('No candidateInfo; skipping sheet send'); return; }
+  const { name, email, phone, subject } = window.candidateInfo;
+  const attempted = selectedAnswers.filter(a => a !== null).length;
+  const unattempted = 30 - attempted;
+  const score = document.getElementById('score').innerText;
+  const elapsedSec = 1800 - timeLeft;
+  const timeReadable = `${String(Math.floor(elapsedSec/60)).padStart(2,'0')}:${String(elapsedSec%60).padStart(2,'0')}`;
+  const timeTaken = timeReadable;
+  const answers = selectedAnswers.map((idx) => idx===null?"":["A","B","C","D"][idx]);
+  const answersCsv = answers.join(',');
+  const answerTexts = selectedAnswers.map((idx,i)=> (idx!==null && questions[i] && questions[i].options[idx])? questions[i].options[idx] : "");
+  const payload = { quizName: getQuizName(), name, email, phone, subject, attempted, unattempted, score, timeTaken, timeTakenReadable: timeReadable, answers, answerCodes: answers, answersCsv, answerCodesCsv: answersCsv, answerTexts };
+  fetch("https://script.google.com/macros/s/AKfycbyeVJR0A_CvLsIXQvx5IN7zcPK66T0Uy3B09kasOSgXnxGp8LaepjmIt-IXwA3d0rHiUw/exec", {
+    method: "POST", body: JSON.stringify(payload), mode: "no-cors"
+  }).then(() => console.log("Sheet submission sent")).catch(err => console.error("Error sending to sheet:", err));
+}
+</script>
+<style>
+  em { font-family: 'Roboto', Arial, sans-serif; font-style: italic; font-weight: bold; font-size: 1.05em; color: #2a2a2a; }
+  .blank { display: inline-block; border-bottom: 1px solid #333; min-width: 60px; height: 1.2em; vertical-align: middle; margin: 0 4px; }
+  body, #quiz, #question-area, .option-div, .timer { font-family: 'Roboto', Arial, sans-serif; background:#f0f2f5; }
+  #question-grid button { width: 30px; height: 30px; margin: 2px; color: white; font-weight: bold; border-radius: 4px; border: none; font-size: 12px; }
+  .unanswered { background-color: #dc3545; }
+  .answered { background-color: #28a745; }
+  .marked { background-color: #6f42c1; }
+  .passage-container { max-height: 220px; overflow-y: auto; padding: 10px; background: #f8f9fa; border-radius: 8px; border: 1px solid #ced4da; margin-bottom: 15px; }
+  .timer { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; }
+  .correct { color: green; font-weight: bold; }
+  .wrong { color: red; font-weight: bold; }
+  .progress { height: 20px; margin-bottom: 15px; }
+  .option-div { margin: 0 0 0 8px; padding: 0; line-height: 1.2; display: flex; align-items: center; }
+  .option-div label { display: inline; margin-left: 6px; }
+  .site-header { position: fixed; top: 0; left: 0; right: 0; height: 56px; background: #fff; border-bottom: 1px solid #e6e6e6; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; z-index: 1100; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+  .site-header .brand { font-weight: 700; font-size: 1.05rem; color: #222; }
+  .site-header .testname { font-size: 0.95rem; color: #555; }
+  body { padding-top: 72px; }
+  #result .card { position: relative; overflow: hidden; }
+  .logo-watermark { position: absolute; right: 12px; top: 12px; width: 80px; height: auto; opacity: 0.12; pointer-events: none; filter: grayscale(100%); }
+</style>
+</head>
+<body>
+<header class="site-header" role="banner" aria-label="Site header">
+  <div class="brand">LOURDS ENGLISH ACADEMY</div>
+  <div id="test-name" class="testname"></div>
+</header>
+
+<div class="container my-4">
+  <div id="login" class="card p-4 shadow">
+    <h3 class="mb-3">Enter Candidate Details</h3>
+    <input type="text" id="name" class="form-control mb-2" placeholder="Name" required>
+    <input type="email" id="email" class="form-control mb-2" placeholder="Email" required>
+    <input type="tel" id="phone" class="form-control mb-2" placeholder="Phone Number" required>
+    <select id="subject" class="form-select mb-2" required onchange="onSubjectChange()">
+      <option value="">Select Subject</option>
+      <option>Tamil</option><option>English</option><option>Maths</option><option>Physics</option>
+      <option>Chemistry</option><option>Botony</option><option>Zoology</option><option>History</option><option>Geography</option>
+      <option value="Other">Other</option>
+    </select>
+    <input type="text" id="subject-other" class="form-control mb-2" placeholder="Enter subject (if Other)" style="display:none;" />
+    <button class="btn btn-primary mt-2" onclick="startQuiz()">Start Quiz</button>
+  </div>
+  
+</div>
+
+<div id="quiz" class="container-fluid" style="display:none;">
+  <div class="row">
+    <div class="col-md-2 bg-white p-3 shadow">
+      <h5 class="text-center mb-3">Questions</h5>
+      <div id="question-grid" class="d-flex flex-wrap justify-content-center"></div>
+      <div class="mt-3 text-center">
+        <span class="fw-bold">Green:</span> Answered<br>
+        <span class="fw-bold">Red:</span> Unanswered<br>
+        <span class="fw-bold">Purple:</span> Marked
+      </div>
+    </div>
+    <div class="col-md-10 p-4">
+      <div class="timer text-end" id="timer">Time Remaining: 30:00</div>
+      <div class="progress mb-3">
+        <div id="timerBar" class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
+      </div>
+      <div id="passage-section" class="passage-container" style="display:none;"></div>
+      <div class="card p-3 mb-3 shadow" id="question-area"></div>
+      <div class="mb-4">
+        <button class="btn btn-secondary me-2" onclick="prevQuestion()">Previous</button>
+        <button class="btn btn-secondary me-2" onclick="nextQuestion()">Next</button>
+        <button class="btn btn-warning me-2" onclick="markForReview()">Mark for Review</button>
+        <button class="btn btn-success" onclick="submitQuiz()">Submit Test</button>
+      </div>
+    </div>
+  </div>
+  
+</div>
+
+<div id="result" class="container my-4" style="display:none;">
+  <div class="card p-4 shadow">
+    <img id="logo-watermark" class="logo-watermark" alt="watermark logo" style="display:none;">
+    <h3 class="mb-3">Quiz Result</h3>
+    <p id="candidate-details"></p>
+    <p>Total Questions: 30</p>
+    <p>Attempted: <span id="attempted"></span></p>
+    <p>Unattempted: <span id="unattempted"></span></p>
+    <p>Score: <span id="score"></span> / 30</p>
+    <p>Time Taken: <span id="time-taken"></span></p>
+    <div id="answer-review" class="mt-3"></div>
+    <button class="btn btn-info mt-3" onclick="downloadPDF()">Download Result as PDF</button>
+  </div>
+</div>
+
+<script>
+let currentQuestion = 0;
+let selectedAnswers = Array(30).fill(null);
+let markedQuestions = Array(30).fill(false);
+let timerInterval;
+let timeLeft = 1800;
+
+const questions = [
+  {q:"Find out the odd word from the following:", stem:"", options:["Small","Meagre","Plenty","Little"]},
+  {q:"During which of the following seasons do trees stretch their leafy branches towards the sun?", stem:"", options:["Autumn","Spring","Summer","Winter"]},
+  {q:"Choose the singular form of the underlined word:", stem:"I saw many <u>geese</u> in the park.", options:["gosse","goose","gooses","geese"]},
+  {q:"Robert Frost, an American poet, is noted for his —", stem:"", options:["realistic descriptions of rural life","realistic descriptions of nature and lakes","realistic descriptions of downtrodden people","realistic descriptions of people born in the highest social class"]},
+  {q:"Choose the correct option to complete the sentence:", stem:"The criminal <span class='blank'></span> the place before the police could reach.", options:["was escaping","had escaped","is escaping","will escape"]},
+  {q:"Fill in the blank with the correct word chosen from the options:", stem:"<span class='blank'></span> are ‘a mixture of notices, advertisements, and invitations’. They are captivating and attractive.", options:["Posters","Slogans","Notices","Articles"]},
+  {q:"Choose the reported form of the following sentence:", stem:"Monica said, “I want to become a doctor.”", options:["Monica said that she wants to become a doctor.","Monica said that she is wanting to become a doctor.","Monica said that she wanted to become a doctor.","Monica said that she will become a doctor."]},
+  {q:"“I will take the cow to the market.” These words are uttered by —", stem:"", options:["Jack","Old Man","Giant","Narrator"]},
+  {q:"Fill in the blank with a suitable homophone:", stem:"We have a short <span class='blank'></span> between the sessions.", options:["Brake","Break","Breek","Broken"]},
+  {q:"Choose the author of the poem “Sea Fever.”", stem:"", options:["David Bates","John Masefield","Edgar Albert Guest","George Krokos"]},
+  {q:"Choose the correct pair of determiners for the given sentences:", stem:"I can’t carry the luggage <span class='blank'></span> more. I need <span class='blank'></span> help.", options:["many, any","some, many","any, some","some, some"]},
+  {q:"<span class='blank'></span> luggage is on <span class='blank'></span> platform. Choose the appropriate articles.", stem:"", options:["A, the","An, a","A, an","The,the"]},
+  {q:"What is the expanded form of the abbreviation GST?", stem:"", options:["Goods and Social Tax","Goods and Services Tax","Goods and Stock Tax","Goods and Store Tax"]},
+  {q:"An <span class='blank'></span> consists of three parts: (i) A topic sentence (ii) Supporting details (iii) A concluding sentence", stem:"", options:["Essay","Paragraph","Narration","Poem"]},
+  {q:"The Nilgiri Mountain train travels through —", stem:"", options:["208 serpentine curves and 250 bridges","250 serpentine curves and 250 bridges","280 serpentine curves and 205 bridges","285 serpentine curves and 258 bridges"]},
+  {q:"Fill in the blank with the correct verb form:", stem:"If I had studied, I <span class='blank'></span> the exam.", options:["will pass","would have passed","would pass","passed"]},
+  {q:"Find the blended word for: Mechanics + Electronics", stem:"", options:["Mechelectronics","Mechelec","Mechatronics","Mecelenics"]},
+  {q:"Pick out the meaning of the idiom “as busy as a hibernating bear.”", stem:"", options:["Being very hungry","Putting oneself in a dangerous position","Remaining idle","Being unsociable"]},
+  {q:"Choose the correct syllabification for the given word utopia:", stem:"", options:["u-to-pi-a","ut-o-pi-a","uto-pi-a","ut-op-i-a"]},
+  {q:"What is the logical sequence of these words?", stem:"1. Caterpillar  2. Egg  3. Butterfly  4. Pupa", options:["4, 2, 1, 3","1, 2, 4, 3","1, 4, 2, 3","2, 1, 4, 3"]},
+  {q:"The pair of words bat/bat belongs to —", stem:"", options:["Homonyms","Homophones","Homographs","Synonyms"]},
+  {q:"Choose the correct meaning for the underlined idiom:", stem:"“I have done more than my share in this partnership. <em>The ball is in your court</em> to decide what happens next.”", options:["Turn to make a decision","The papers are before you","Watch carefully","A good chance to get something valuable"]},
+  {q:"Scattered pieces of rubbish or remains are termed as —", stem:"", options:["waste","mortar","devastation","debris"]},
+  {q:"“Don’t go by the words,” he said. Here, the phrasal verb go by means —", stem:"", options:["go by the side","judge by","follow by","get by"]},
+  {q:"In a certain code language, if KBOVBSZ is the code word for JANUARY, what is the code word for OCTOBER?", stem:"", options:["PDUPCFM","BDUPCFB","PDUBCFS","PDUPCFS"]},
+  {q:"Fill in the blank with a suitable homophone:", stem:"This medicine will <span class='blank'></span> your pain.", options:["Lesson","Lessen","Lessun","Lesen"]},
+  {q:"\"My Reminiscences\" was written and published by —", stem:"", options:["Rabindranath Tagore","Aurobindo","Swami Vivekananda","Manoj Das"]},
+  {q:"Choose the correct sentence:", stem:"", options:["I cannot cope with this pressure.","I cannot cope up with this pressure.","I cannot copes with this pressure.","I cannot cope this pressure."]},
+  {q:"Pick out the correct homonym from the given words:", stem:"", options:["kind","tear","night","stare"]},
+  {q:"Choose the correct expanded form of the abbreviation NMMS:", stem:"", options:["National Means-cum-Merit Scholarship","National Merit-cum-Means Scholarship","National Minimum and Maximum Scholarship","National Merit-cum-Matured Scholarship"]}
+];
+
+const correctAnswers = [
+  "Plenty",
+  "Spring",
+  "goose",
+  "realistic descriptions of rural life",
+  "had escaped",
+  "Posters",
+  "Monica said that she wanted to become a doctor.",
+  "Jack",
+  "Break",
+  "John Masefield",
+  "any, some",
+  "The,the",
+  "Goods and Services Tax",
+  "Paragraph",
+  "208 serpentine curves and 250 bridges",
+  "would have passed",
+  "Mechatronics",
+  "Remaining idle",
+  "u-to-pi-a",
+  "2, 1, 4, 3",
+  "Homonyms",
+  "Turn to make a decision",
+  "debris",
+  "judge by",
+  "PDUPCFS",
+  "Lessen",
+  "Rabindranath Tagore",
+  "I cannot cope with this pressure.",
+  "tear",
+  "National Means-cum-Merit Scholarship"
+];
+
+function startQuiz(){
+  let name = document.getElementById('name').value.trim();
+  let email = document.getElementById('email').value.trim();
+  let phone = document.getElementById('phone').value.trim();
+  let subject = document.getElementById('subject').value;
+  if (subject === 'Other') {
+    const otherVal = (document.getElementById('subject-other').value || '').trim();
+    if (!otherVal) { alert('Please type your subject'); return; }
+    subject = otherVal;
+  }
+  if(!name || !email || !phone || !subject){ alert("Please fill all details"); return;}
+  window.candidateInfo = {name,email,phone,subject};
+  document.getElementById('login').style.display='none';
+  document.getElementById('quiz').style.display='block';
+  buildQuestionGrid();
+  showQuestion(currentQuestion);
+  startTimer();
+}
+
+function onSubjectChange(){
+  const sel = document.getElementById('subject');
+  const other = document.getElementById('subject-other');
+  if (!sel || !other) return;
+  if (sel.value === 'Other') { other.style.display = ''; other.focus(); }
+  else { other.style.display = 'none'; other.value = ''; }
+}
+
+function buildQuestionGrid(){
+  let grid = document.getElementById('question-grid');
+  for(let i=0;i<30;i++){
+    let btn = document.createElement('button');
+    btn.id = 'qbtn'+i;
+    btn.innerText = i+1;
+    btn.className = 'unanswered';
+    btn.onclick = ()=>{currentQuestion=i; showQuestion(i);} 
+    grid.appendChild(btn);
+  }
+}
+
+function showQuestion(index){
+  // No passage section used in this test
+  document.getElementById('passage-section').style.display = 'none';
+  let q = questions[index];
+  let html = `<div><b>Q${index+1}. ${q.q}</b></div>`;
+  html += `<div>${q.stem || ''}</div>`;
+  const optionCodes = ['a)', 'b)', 'c)', 'd)'];
+  for(let i=0;i<q.options.length;i++){
+    const checked = selectedAnswers[index] === i ? 'checked' : '';
+    html += `<div class="option-div"><input type="radio" name="option" id="opt${i}" value="${i}" ${checked} onclick="selectOptionIndex(${i})"> <label for="opt${i}">${optionCodes[i]} ${q.options[i]}</label></div>`;
+  }
+  document.getElementById('question-area').innerHTML = html;
+}
+
+function selectOptionIndex(idx){ selectedAnswers[currentQuestion] = idx; updateGridStatus(); }
+function updateGridStatus(){
+  for(let i=0;i<30;i++){
+    let btn = document.getElementById('qbtn'+i);
+    if(markedQuestions[i]) btn.className='marked';
+    else if(selectedAnswers[i] !== null) btn.className='answered';
+    else btn.className='unanswered';
+  }
+}
+function nextQuestion(){ if(currentQuestion<29){ currentQuestion++; showQuestion(currentQuestion);} }
+function prevQuestion(){ if(currentQuestion>0){ currentQuestion--; showQuestion(currentQuestion);} }
+function markForReview(){ markedQuestions[currentQuestion]=true; updateGridStatus(); }
+function startTimer(){ timerInterval = setInterval(()=>{ timeLeft--; let min=Math.floor(timeLeft/60); let sec=timeLeft%60; document.getElementById('timer').innerText=`Time Remaining: ${String(min).padStart(2,'0')}:${sec<10?'0'+sec:sec}`; document.getElementById('timerBar').style.width=(timeLeft/1800*100)+'%'; if(timeLeft<=0){ clearInterval(timerInterval); submitQuiz();}},1000); }
+function submitQuiz(){ clearInterval(timerInterval); document.getElementById('quiz').style.display='none'; document.getElementById('result').style.display='block'; showResult(); sendToGoogleSheet(); }
+
+function showResult(){
+  let {name,email,phone,subject} = window.candidateInfo;
+  document.getElementById('candidate-details').innerHTML=`Name: ${name} | Email: ${email} | Phone: ${phone} | Subject: ${subject}`;
+  let attempted=selectedAnswers.filter(a=>a!==null).length;
+  document.getElementById('attempted').innerText=attempted;
+  document.getElementById('unattempted').innerText=30-attempted;
+  let score=0;
+  let html="";
+  for(let i=0;i<30;i++){
+    let q=questions[i];
+    let userIdx=selectedAnswers[i];
+    const norm = (s)=> (""+s).replace(/\s+/g,' ').trim();
+    let correctIdx = Array.isArray(q.options) ? q.options.findIndex(o => norm(o)===norm(correctAnswers[i])) : -1;
+    if(userIdx!==null && userIdx===correctIdx) score++;
+    const userText = (userIdx!==null && q.options[userIdx]) ? q.options[userIdx] : 'Not answered';
+    const correctText = (correctIdx>=0 && q.options[correctIdx]) ? q.options[correctIdx] : correctAnswers[i];
+    const cls = (userIdx!==null && userIdx===correctIdx) ? 'correct' : 'wrong';
+    html+=`<p><b>Q${i+1}:</b> ${q.stem}<br> Your answer: <span class="${cls}">${userText}</span> | Correct: ${correctText}</p>`;
+  }
+  document.getElementById('score').innerText=score;
+  const elapsedSec = 1800 - timeLeft;
+  const mm = Math.floor(elapsedSec/60);
+  const ss = elapsedSec % 60;
+  const timeReadable = `${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+  document.getElementById('time-taken').innerText = timeReadable;
+  document.getElementById('answer-review').innerHTML=html;
+}
+
+function downloadPDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({format: 'a4', unit: 'mm'});
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const tableMarginLeft = 10;
+  const tableColumnWidths = [12, 85, 85];
+  const tableRightX = tableMarginLeft + tableColumnWidths.reduce((a,b)=>a+b,0);
+  const drawCenteredWatermark = () => {
+    try {
+      const b64 = window.logoBlackBase64 || window.logoGreyBase64 || window.logoBase64;
+      if (!b64) return;
+      const imgEl = document.getElementById('logo-watermark');
+      const iw = (imgEl && imgEl.naturalWidth) ? imgEl.naturalWidth : 1000;
+      const ih = (imgEl && imgEl.naturalHeight) ? imgEl.naturalHeight : 1000;
+      const aspect = iw/ih;
+      const maxW = pageWidth * 0.6;
+      const maxH = pageHeight * 0.6;
+      let w = maxW; let h = w/aspect;
+      if (h > maxH) { h = maxH; w = h*aspect; }
+      const x = (pageWidth - w)/2;
+      const y = (pageHeight - h)/2;
+      if (doc.GState) { doc.setGState(new doc.GState({ opacity: 0.06 })); }
+      doc.addImage('data:image/png;base64,' + b64, 'PNG', x, y, w, h);
+      if (doc.GState) { doc.setGState(new doc.GState({ opacity: 1 })); }
+    } catch (_) {}
+  };
+  const academy = "LOURDS ENGLISH ACADEMY";
+  try {
+    const headerB64 = window.logoBlackBase64 || window.logoGreyBase64 || window.logoBase64;
+    if (headerB64) { doc.addImage('data:image/png;base64,' + headerB64, 'PNG', 10, 8, 18, 18); }
+  } catch (_) {}
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text(academy, pageWidth/2, 16, {align: "center"});
+  doc.setFontSize(12);
+  doc.text(document.title || "Test Name", pageWidth/2, 22, {align: "center"});
+
+  doc.setLineWidth(0.2);
+  doc.line(tableMarginLeft, 26, tableRightX, 26);
+  doc.setFontSize(10);
+  const metaY = 30;
+  const attempted = selectedAnswers.filter(a=>a!==null).length;
+  const unattempted = 30 - attempted;
+  const scoreText = document.getElementById('score').innerText + ' / 30';
+  const elapsedSecPDF = 1800 - timeLeft;
+  const timeReadablePDF = `${String(Math.floor(elapsedSecPDF/60)).padStart(2,'0')}:${String(elapsedSecPDF%60).padStart(2,'0')}`;
+  const timeText = `${timeReadablePDF}`;
+  const cd = window.candidateInfo || {name:'',email:'',phone:'',subject:''};
+  const leftX = tableMarginLeft, rightX = tableRightX;
+  doc.text(`Name: ${cd.name || ''}`, leftX, metaY);
+  doc.text(`Email: ${cd.email || ''}`, leftX, metaY+6);
+  doc.text(`Phone: ${cd.phone || ''}`, leftX, metaY+12);
+  doc.text(`Subject: ${cd.subject || ''}`, leftX, metaY+18);
+  doc.text(`Attempted: ${attempted}`, rightX, metaY, { align: 'right' });
+  doc.text(`Unattempted: ${unattempted}`, rightX, metaY+6, { align: 'right' });
+  doc.setTextColor(0, 102, 204);
+  doc.text(`Score: ${scoreText}`, rightX, metaY+12, { align: 'right' });
+  doc.setTextColor(0, 0, 0);
+  doc.text(`Time: ${timeText}`, rightX, metaY+18, { align: 'right' });
+
+  const startY = metaY + 26;
+  const norm = (s)=> (""+s).replace(/\s+/g,' ').trim();
+  const rows = [];
+  const ansColors = [];
+  for (let i = 0; i < 30; i++) {
+    const q = questions[i];
+    const userIdx = selectedAnswers[i];
+    const correctIdx = Array.isArray(q.options) ? q.options.findIndex(o => norm(o) === norm(correctAnswers[i])) : -1;
+    const code = ['A','B','C','D'];
+    const youCode = (userIdx!==null && userIdx>=0) ? code[userIdx] : '';
+    const corrCode = (correctIdx>=0) ? code[correctIdx] : '';
+    const youText = (userIdx!==null && q.options[userIdx]) ? q.options[userIdx] : '';
+    const corrText = (correctIdx>=0 && q.options[correctIdx]) ? q.options[correctIdx] : correctAnswers[i];
+    let color = [130,130,130];
+    if (userIdx !== null) {
+      color = (userIdx === correctIdx) ? [0,128,0] : [200,0,0];
+    }
+    ansColors.push(color);
+    rows.push([
+      (i+1).toString(),
+      youCode ? `${youCode}) ${youText}` : 'Not answered',
+      corrCode ? `${corrCode}) ${corrText}` : corrText
+    ]);
+  }
+
+  if (doc.autoTable) {
+    doc.autoTable({
+      head: [['Q#', 'Your Answer', 'Correct Answer']],
+      body: rows,
+      startY: startY,
+      margin: { left: tableMarginLeft, right: 10 },
+      theme: 'grid',
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [33, 37, 41], halign: 'center', valign: 'middle', fontStyle: 'bold', textColor: 255 },
+      columnStyles: {
+        0: { halign: 'center', cellWidth: tableColumnWidths[0] },
+        1: { cellWidth: tableColumnWidths[1] },
+        2: { cellWidth: tableColumnWidths[2] }
+      },
+      didParseCell: function(data) {
+        if (data.section === 'body' && data.column.index === 1) {
+          const idx = data.row.index;
+          const col = ansColors[idx] || [0,0,0];
+          data.cell.styles.textColor = col;
+        }
+      },
+      didDrawPage: function(data) {
+        if (data.pageNumber && data.pageNumber >= 1) {
+          drawCenteredWatermark();
+        }
+        const totalPages = doc.internal.getNumberOfPages();
+        const pageStr = 'Page ' + totalPages;
+        const now = new Date();
+        const ts = `${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        doc.setFontSize(9);
+        doc.text(ts, 10, pageHeight - 8);
+        doc.text(pageStr, pageWidth - 20, pageHeight - 8);
+      }
+    });
+  } else {
+    let y = startY;
+    for (const r of rows) {
+      const line = `${r[0]}. Your: ${r[1]} | Correct: ${r[2]}`;
+      const lines = doc.splitTextToSize(line, pageWidth - 20);
+      if (y + lines.length*6 > pageHeight - 14) { doc.addPage(); y = 14; }
+      doc.text(lines, 10, y);
+      y += lines.length*6;
+    }
+  }
+
+  doc.save("Quiz_Result.pdf");
+}
+
+(function(){ try{ var tn=(document.title||'').trim() || (location.pathname.split('/').pop()||''); tn=tn.replace(/\.[^.]+$/,''); var el=document.getElementById('test-name'); if(el) el.innerText = tn?('- '+tn):''; }catch(e){} })();
+
+;(function(){
+  fetch('lourds_logo_base64.txt').then(r=>r.text()).then(t=>{
+    const raw=t.trim(); if(!raw) return;
+    window.logoBase64 = raw.replace(/^data:image\/[a-z]+;base64,/,'');
+    const img=new Image();
+    img.onload=function(){
+      try{
+        const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+        const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h; const ctx=canvas.getContext('2d');
+        ctx.drawImage(img,0,0,w,h);
+        const src=ctx.getImageData(0,0,w,h); const data=src.data;
+        const grayArr=new Uint8ClampedArray(data); const blackArr=new Uint8ClampedArray(data);
+        for(let i=0;i<data.length;i+=4){
+          const r=data[i], g=data[i+1], b=data[i+2], a=data[i+3];
+          const y=Math.round(0.299*r+0.587*g+0.114*b);
+          grayArr[i]=y; grayArr[i+1]=y; grayArr[i+2]=y; grayArr[i+3]=a;
+          const yDark=Math.max(0,Math.min(255,Math.round(y*0.25)));
+          blackArr[i]=yDark; blackArr[i+1]=yDark; blackArr[i+2]=yDark; blackArr[i+3]=a;
+        }
+        const toB64=(arr)=>{ const c=document.createElement('canvas'); c.width=w; c.height=h; const cx=c.getContext('2d'); const id=cx.createImageData(w,h); id.data.set(arr); cx.putImageData(id,0,0); return c.toDataURL('image/png').replace(/^data:image\/png;base64/, 'data:image/png;base64'); };
+        // We only need the raw base64 content for jsPDF; store variants too
+        window.logoGreyBase64=grayArr?(''+document.createElement('canvas').toDataURL):window.logoBase64;
+        // But for simplicity reuse original conversions like in test-02
+        const toB64raw=(arr)=>{ const c=document.createElement('canvas'); c.width=w; c.height=h; const cx=c.getContext('2d'); const id=cx.createImageData(w,h); id.data.set(arr); cx.putImageData(id,0,0); return c.toDataURL('image/png').replace(/^data:image\/png;base64,/, ''); };
+        window.logoGreyBase64=toB64raw(grayArr);
+        window.logoBlackBase64=toB64raw(blackArr);
+      }catch(e){}
+      const el=document.getElementById('logo-watermark');
+      if(el){ el.src='data:image/png;base64,'+(window.logoGreyBase64||window.logoBase64); el.style.display='block'; }
+    };
+    img.src='data:image/png;base64,'+window.logoBase64;
+  }).catch(()=>{});
+})();
+
+try {
+  window.startQuiz = startQuiz;
+  window.prevQuestion = prevQuestion;
+  window.nextQuestion = nextQuestion;
+  window.markForReview = markForReview;
+  window.submitQuiz = submitQuiz;
+  window.selectOptionIndex = selectOptionIndex;
+  window.downloadPDF = downloadPDF;
+  window.onSubjectChange = onSubjectChange;
+} catch(_){ }
+</script>
+</body>
+</html>
