@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>test-05</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script>
+function getQuizName(){
+  try{
+    let tn = (document.title || "").trim();
+    if(!tn){ tn = (location.pathname.split('/').pop() || '').replace(/\.[^.]+$/, ''); }
+    tn = tn || 'test-05';
+    return tn;
+  }catch(e){ return 'test-05'; }
+}
+function sendToGoogleSheet() {
+  if(!window.candidateInfo){ console.warn('No candidateInfo; skipping sheet send'); return; }
+  const { name, email, phone, subject } = window.candidateInfo;
+  const attempted = selectedAnswers.filter(a => a !== null).length;
+  const unattempted = 30 - attempted;
+  const score = document.getElementById('score').innerText;
+  const elapsedSec = 1800 - timeLeft;
+  const timeReadable = `${String(Math.floor(elapsedSec/60)).padStart(2,'0')}:${String(elapsedSec%60).padStart(2,'0')}`;
+  const answers = selectedAnswers.map((idx) => idx===null?"":["A","B","C","D"][idx]);
+  const answersCsv = answers.join(',');
+  const answerTexts = selectedAnswers.map((idx,i)=> (idx!==null && questions[i] && questions[i].options[idx])? questions[i].options[idx] : "");
+  const payload = { quizName: getQuizName(), name, email, phone, subject, attempted, unattempted, score, timeTaken: timeReadable, timeTakenReadable: timeReadable, answers, answerCodes: answers, answersCsv, answerCodesCsv: answersCsv, answerTexts };
+  fetch("https://script.google.com/macros/s/AKfycbyeVJR0A_CvLsIXQvx5IN7zcPK66T0Uy3B09kasOSgXnxGp8LaepjmIt-IXwA3d0rHiUw/exec", {
+    method: "POST", body: JSON.stringify(payload), mode: "no-cors"
+  }).then(() => console.log("Sheet submission sent")).catch(err => console.error("Error sending to sheet:", err));
+}
+</script>
+<style>
+  em { font-family: 'Roboto', Arial, sans-serif; font-style: italic; font-weight: bold; font-size: 1.05em; color: #2a2a2a; }
+  .blank { display: inline-block; border-bottom: 1px solid #333; min-width: 60px; height: 1.2em; vertical-align: middle; margin: 0 4px; }
+  body, #quiz, #question-area, .option-div, .timer { font-family: 'Roboto', Arial, sans-serif; background:#f0f2f5; }
+  #question-grid button { width: 30px; height: 30px; margin: 2px; color: white; font-weight: bold; border-radius: 4px; border: none; font-size: 12px; }
+  .unanswered { background-color: #dc3545; }
+  .answered { background-color: #28a745; }
+  .marked { background-color: #6f42c1; }
+  .passage-container { max-height: 220px; overflow-y: auto; padding: 10px; background: #f8f9fa; border-radius: 8px; border: 1px solid #ced4da; margin-bottom: 15px; }
+  .timer { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; }
+  .correct { color: green; font-weight: bold; }
+  .wrong { color: red; font-weight: bold; }
+  .progress { height: 20px; margin-bottom: 15px; }
+  .option-div { margin: 0 0 0 8px; padding: 0; line-height: 1.2; display: flex; align-items: center; }
+  .option-div label { display: inline; margin-left: 6px; }
+  .site-header { position: fixed; top: 0; left: 0; right: 0; height: 56px; background: #fff; border-bottom: 1px solid #e6e6e6; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; z-index: 1100; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+  .site-header .brand { font-weight: 700; font-size: 1.05rem; color: #222; }
+  .site-header .testname { font-size: 0.95rem; color: #555; }
+  body { padding-top: 72px; }
+  #result .card { position: relative; overflow: hidden; }
+  .logo-watermark { position: absolute; right: 12px; top: 12px; width: 80px; height: auto; opacity: 0.12; pointer-events: none; filter: grayscale(100%); }
+  /* Align question number on the left and all question lines in a straight left line */
+  .qrow { display: flex; align-items: flex-start; gap: 10px; }
+  .qnum { flex: 0 0 40px; min-width: 40px; text-align: left; font-weight: 700; }
+  .qtext { flex: 1 1 auto; }
+  .qtext .qtitle { font-weight: 700; margin-bottom: 4px; }
+  .qtext .qstem { margin-bottom: 8px; }
+  .qtext .option-div { margin-left: 0; }
+  table.table-sm th, table.table-sm td { border: 1px solid rgba(0,0,0,0.2); }
+  table.table-sm { border-collapse: collapse; width: 100%; }
+</style>
+</head>
+<body>
+<header class="site-header" role="banner" aria-label="Site header">
+  <div class="brand">LOURDS ENGLISH ACADEMY</div>
+  <div id="test-name" class="testname"></div>
+  </header>
+
+<div class="container my-4">
+  <div id="login" class="card p-4 shadow">
+    <h3 class="mb-3">Enter Candidate Details</h3>
+    <input type="text" id="name" class="form-control mb-2" placeholder="Name" required>
+    <input type="email" id="email" class="form-control mb-2" placeholder="Email" required>
+    <input type="tel" id="phone" class="form-control mb-2" placeholder="Phone Number" required>
+    <select id="subject" class="form-select mb-2" required onchange="onSubjectChange()">
+      <option value="">Select Subject</option>
+      <option>Tamil</option><option>English</option><option>Maths</option><option>Physics</option>
+      <option>Chemistry</option><option>Botony</option><option>Zoology</option><option>History</option><option>Geography</option>
+      <option value="Other">Other</option>
+    </select>
+    <input type="text" id="subject-other" class="form-control mb-2" placeholder="Enter subject (if Other)" style="display:none;" />
+    <button class="btn btn-primary mt-2" onclick="startQuiz()">Start Quiz</button>
+  </div>
+  
+</div>
+
+<div id="quiz" class="container-fluid" style="display:none;">
+  <div class="row">
+    <div class="col-md-2 bg-white p-3 shadow">
+      <h5 class="text-center mb-3">Questions</h5>
+      <div id="question-grid" class="d-flex flex-wrap justify-content-center"></div>
+      <div class="mt-3 text-center">
+        <span class="fw-bold">Green:</span> Answered<br>
+        <span class="fw-bold">Red:</span> Unanswered<br>
+        <span class="fw-bold">Purple:</span> Marked
+      </div>
+    </div>
+    <div class="col-md-10 p-4">
+      <div class="timer text-end" id="timer">Time Remaining: 30:00</div>
+      <div class="progress mb-3">
+        <div id="timerBar" class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
+      </div>
+      <div id="passage-section" class="passage-container" style="display:none;"></div>
+      <div class="card p-3 mb-3 shadow" id="question-area"></div>
+      <div class="mb-4">
+        <button class="btn btn-secondary me-2" onclick="prevQuestion()">Previous</button>
+        <button class="btn btn-secondary me-2" onclick="nextQuestion()">Next</button>
+        <button class="btn btn-warning me-2" onclick="markForReview()">Mark for Review</button>
+        <button class="btn btn-success" onclick="submitQuiz()">Submit Test</button>
+      </div>
+    </div>
+  </div>
+  
+</div>
+
+<div id="result" class="container my-4" style="display:none;">
+  <div class="card p-4 shadow">
+    <img id="logo-watermark" class="logo-watermark" alt="watermark logo" style="display:none;">
+    <h3 class="mb-3">Quiz Result</h3>
+    <p id="candidate-details"></p>
+    <p>Total Questions: 30</p>
+    <p>Attempted: <span id="attempted"></span></p>
+    <p>Unattempted: <span id="unattempted"></span></p>
+    <p>Score: <span id="score"></span> / 30</p>
+    <p>Time Taken: <span id="time-taken"></span></p>
+    <div id="answer-review" class="mt-3"></div>
+    <button class="btn btn-info mt-3" onclick="downloadPDF()">Download Result as PDF</button>
+  </div>
+</div>
+
+<script>
+let currentQuestion = 0;
+let selectedAnswers = Array(30).fill(null);
+let markedQuestions = Array(30).fill(false);
+let timerInterval;
+let timeLeft = 1800;
+
+const questions = [
+  {q:"Fill in the blank with a given word that conveys the correct meaning of the sentence.", stem:"<div>_____ grow well in coastal lands.</div>", options:["Beaches","Beeches","Peaches","Dates"]},
+  {q:"Choose the correct modal verb indicating permission.", stem:"<div>_____ I use your phone please?</div>", options:["Shall","Will","Can","Would"]},
+  {q:"Fill in the blank with the suitable word taken from the options.", stem:"<div>_____ is a figure of speech where an adjective describing a noun is transferred from the noun and it is meant to describe another noun in a sentence.</div>", options:["Repetition","Metaphor","Synecdoche","Transferred epithet"]},
+  {q:"Fill in the blank with appropriate form of the verb given in the option.", stem:"<div>When the burglars broke into the house, everybody _________________ soundly.</div>", options:["was sleeping","is sleeping","slept","have slept"]},
+  {q:"Which of the following is a monosyllabic word?", stem:"", options:["Ago","Moral","Rhythm","Delay"]},
+  {q:"Complete the conditional sentence.", stem:"<div>If I _______________ (be) a fish, I would swim.</div>", options:["am","is","were","are"]},
+  {q:"The part ‘superscript’ in a letter is meant for _______________.", stem:"", options:["leave taking part","receiver’s address on the cover","communication part","greeting part"]},
+  {q:"According to a famous Japanese Folk Tale, ‘The Envious Neighbour’, which one among the following is not correct in the story?", stem:"", options:["The old farmer was a kind person","The dog helped the farmer","The prince rewarded the neighbour","The wicked old people mended their ways"]},
+  {q:"Choose the right passive voice for the given active voice.", stem:"<div>Who taught her English?</div>", options:["by whom was she taught English?","by whom she is taught English?","who has taught English?","English is taught by whom?"]},
+  {q:"Which of the following word is not a suitable derivative for the word ‘common’?", stem:"", options:["Uncommon","Commonly","Commonment","Commonness"]},
+  {q:"Choose the correct article.", stem:"<div>_____ Earth revolves around the Sun.</div>", options:["An","The","A","This"]},
+  {q:"Choose the suitable combination for the blended word ‘motel’.", stem:"", options:["Motorway + hotel","Motorcar + hotel","Motor + hotel","Motorist + hotel"]},
+  {q:"Repeat the same words or phrases to emphasise a feeling or idea in the poem is called _______________.", stem:"", options:["alliteration","simile","repetition","metaphor"]},
+  {q:"Fill in the blank with correct determiner.", stem:"<div>There are _________________ biscuits in the plate.</div>", options:["few","some","many","much"]},
+  {q:"When we develop a note made from an original text, it is called _______________.", stem:"", options:["developing hints","note making","note taking","summary writing"]},
+  {q:"Match the idioms with their meanings.", stem:`<div>
+<table class="table table-sm">
+  <thead>
+    <tr>
+      <th style="width:50%;">Idioms</th>
+      <th style="width:50%;">Meanings</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>(1) take five</td><td>(a) blissfully happy</td></tr>
+    <tr><td>(2) seventh heaven</td><td>(b) confused or in a state of disorder</td></tr>
+    <tr><td>(3) on cloud nine</td><td>(c) take a short break</td></tr>
+    <tr><td>(4) at sixes and sevens</td><td>(d) very happy about something</td></tr>
+  </tbody>
+  </table>
+  <div class="mt-2"><b>Codes:</b></div>
+</div>`, options:["c, d, a, b","d, c, b, a","c, a, d, b","c, b, d, a"]},
+  {q:"In a code language CARE is 27, then what is READ?", stem:"", options:["28","30","27","29"]},
+  {q:"An English writer of children’s ‘Black Beauty’ is.", stem:"", options:["Mary Botham Howitt","Ogden Nash","John Masefield","Anna Sewell"]},
+  {q:"Among the following sentences, which one is incorrect?", stem:"", options:["he has grey hair","what is the time by your watch","I cannot cope up with this pressure","I prefer coffee to tea"]},
+  {q:"The Paralympic games are for _________________", stem:"", options:["disabled people","children","women","men"]},
+  {q:"‘And out of its leprous hide sprouting leaves’ <br><em>what does the phrase ‘leprous hide’ mean?</em>", stem:"", options:["covered with roots","covered with flowers","covered with leaves","covered with scales"]},
+  {q:"_________________ is a word (part of speech) which expresses some sudden feeling.", stem:"", options:["conjunction","interjection","adjective","adverb"]},
+  {q:"What does ‘arm in arm’ mean in the following sentence? <br>‘The two men started up the street, arm in arm’.", stem:"", options:["with arms linked together","with weapons in hands","with handcuffs on wrists","with holding armour"]},
+  {q:"Find the synonym for the underlined word.", stem:"<div>The narrator was <u>quiet</u> when Pongo questioned him.</div>", options:["furious","noisy","silent","agitated"]},
+  {q:"A means of transmitting and receiving both voice and picture for a personal conversation is called _______________.", stem:"", options:["photographer","phototelegrams","phonotelephote","jovian"]},
+  {q:"The word ‘Spring Fields’ refers to _______________.", stem:"", options:["a novel","a place in London","a team","a short story"]},
+  {q:"Ruskin Bond was honoured with ‘The Sahitya Akademi Award’ in 1992 for his work _______________.", stem:"", options:["Room on the Roof","The Blue Umbrella","Our Trees Still Grow in Dehra","An Island of Trees"]},
+  {q:"‘A thing of beauty is a joy for ever’ said by _________________ .", stem:"", options:["William Wordsworth","John Keats","William Shakespeare","Robert Blake"]},
+  {q:"The act of trimming a plant is called _______________.", stem:"", options:["chiming","pruning","sprightliness","cutting"]},
+  {q:"State which of the following sentence is a complex sentence.", stem:"", options:["We must eat to live, but we should not live to eat","Unless you have a valid passport you cannot leave the country","This is not the way to answer","Smita carried out the survey and presented her report"]}
+];
+
+const correctAnswers = [
+  "Beeches",
+  "Can",
+  "Transferred epithet",
+  "was sleeping",
+  "Rhythm",
+  "were",
+  "receiver’s address on the cover",
+  "The prince rewarded the neighbour",
+  "by whom was she taught English?",
+  "Commonment",
+  "The",
+  "Motor + hotel",
+  "repetition",
+  "many",
+  "note making",
+  "c, a, d, b",
+  "28",
+  "Anna Sewell",
+  "I cannot cope up with this pressure",
+  "disabled people",
+  "covered with scales",
+  "interjection",
+  "with arms linked together",
+  "silent",
+  "phonotelephote",
+  "a place in London",
+  "Our Trees Still Grow in Dehra",
+  "John Keats",
+  "pruning",
+  "Unless you have a valid passport you cannot leave the country"
+];
+
+function startQuiz(){
+  let name = document.getElementById('name').value.trim();
+  let email = document.getElementById('email').value.trim();
+  let phone = document.getElementById('phone').value.trim();
+  let subject = document.getElementById('subject').value;
+  if (subject === 'Other') {
+    const otherVal = (document.getElementById('subject-other').value || '').trim();
+    if (!otherVal) { alert('Please type your subject'); return; }
+    subject = otherVal;
+  }
+  if(!name || !email || !phone || !subject){ alert("Please fill all details"); return;}
+  window.candidateInfo = {name,email,phone,subject};
+  document.getElementById('login').style.display='none';
+  document.getElementById('quiz').style.display='block';
+  buildQuestionGrid();
+  showQuestion(currentQuestion);
+  startTimer();
+}
+
+function onSubjectChange(){
+  const sel = document.getElementById('subject');
+  const other = document.getElementById('subject-other');
+  if (!sel || !other) return;
+  if (sel.value === 'Other') { other.style.display = ''; other.focus(); }
+  else { other.style.display = 'none'; other.value = ''; }
+}
+
+function buildQuestionGrid(){
+  let grid = document.getElementById('question-grid');
+  for(let i=0;i<30;i++){
+    let btn = document.createElement('button');
+    btn.id = 'qbtn'+i;
+    btn.innerText = i+1;
+    btn.className = 'unanswered';
+    btn.onclick = ()=>{currentQuestion=i; showQuestion(i);} 
+    grid.appendChild(btn);
+  }
+}
+
+function showQuestion(index){
+  document.getElementById('passage-section').style.display = 'none';
+  let q = questions[index];
+  let html = `<div class="qrow">` +
+             `  <div class="qnum">Q${index+1}.</div>` +
+             `  <div class="qtext">` +
+             `    <div class="qtitle">${q.q}</div>` +
+             `    ${q.stem ? `<div class=\"qstem\">${q.stem}</div>` : ''}`;
+  const optionCodes = ['a)', 'b)', 'c)', 'd)'];
+  for(let i=0;i<q.options.length;i++){
+    const checked = selectedAnswers[index] === i ? 'checked' : '';
+    html += `<div class=\"option-div\"><input type=\"radio\" name=\"option\" id=\"opt${i}\" value=\"${i}\" ${checked} onclick=\"selectOptionIndex(${i})\"> <label for=\"opt${i}\">${optionCodes[i]} ${q.options[i]}</label></div>`;
+  }
+  html += `  </div>` +
+          `</div>`;
+  document.getElementById('question-area').innerHTML = html;
+}
+
+function selectOptionIndex(idx){ selectedAnswers[currentQuestion] = idx; updateGridStatus(); }
+function updateGridStatus(){
+  for(let i=0;i<30;i++){
+    let btn = document.getElementById('qbtn'+i);
+    if(markedQuestions[i]) btn.className='marked';
+    else if(selectedAnswers[i] !== null) btn.className='answered';
+    else btn.className='unanswered';
+  }
+}
+function nextQuestion(){ if(currentQuestion<29){ currentQuestion++; showQuestion(currentQuestion);} }
+function prevQuestion(){ if(currentQuestion>0){ currentQuestion--; showQuestion(currentQuestion);} }
+function markForReview(){ markedQuestions[currentQuestion]=true; updateGridStatus(); }
+function startTimer(){ timerInterval = setInterval(()=>{ timeLeft--; let min=Math.floor(timeLeft/60); let sec=timeLeft%60; document.getElementById('timer').innerText=`Time Remaining: ${String(min).padStart(2,'0')}:${sec<10?'0'+sec:sec}`; document.getElementById('timerBar').style.width=(timeLeft/1800*100)+'%'; if(timeLeft<=0){ clearInterval(timerInterval); submitQuiz();}},1000); }
+function submitQuiz(){ clearInterval(timerInterval); document.getElementById('quiz').style.display='none'; document.getElementById('result').style.display='block'; showResult(); sendToGoogleSheet(); }
+
+function showResult(){
+  let {name,email,phone,subject} = window.candidateInfo;
+  document.getElementById('candidate-details').innerHTML=`Name: ${name} | Email: ${email} | Phone: ${phone} | Subject: ${subject}`;
+  let attempted=selectedAnswers.filter(a=>a!==null).length;
+  document.getElementById('attempted').innerText=attempted;
+  document.getElementById('unattempted').innerText=30-attempted;
+  let score=0;
+  let html="";
+  for(let i=0;i<30;i++){
+    let q=questions[i];
+    let userIdx=selectedAnswers[i];
+    const norm = (s)=> (""+s).replace(/\s+/g,' ').trim();
+    let correctIdx = Array.isArray(q.options) ? q.options.findIndex(o => norm(o)===norm(correctAnswers[i])) : -1;
+    if(userIdx!==null && userIdx===correctIdx) score++;
+    const userText = (userIdx!==null && q.options[userIdx]) ? q.options[userIdx] : 'Not answered';
+    const correctText = (correctIdx>=0 && q.options[correctIdx]) ? q.options[correctIdx] : correctAnswers[i];
+    const cls = (userIdx!==null && userIdx===correctIdx) ? 'correct' : 'wrong';
+    html+=`<p><b>Q${i+1}:</b> ${q.stem}<br> Your answer: <span class="${cls}">${userText}</span> | Correct: ${correctText}</p>`;
+  }
+  document.getElementById('score').innerText=score;
+  const elapsedSec = 1800 - timeLeft;
+  const mm = Math.floor(elapsedSec/60);
+  const ss = elapsedSec % 60;
+  const timeReadable = `${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+  document.getElementById('time-taken').innerText = timeReadable;
+  document.getElementById('answer-review').innerHTML=html;
+}
+
+function downloadPDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({format: 'a4', unit: 'mm'});
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const tableMarginLeft = 10;
+  const tableColumnWidths = [12, 85, 85];
+  const tableRightX = tableMarginLeft + tableColumnWidths.reduce((a,b)=>a+b,0);
+  const drawCenteredWatermark = () => {
+    try {
+      const b64 = window.logoBlackBase64 || window.logoGreyBase64 || window.logoBase64;
+      if (!b64) return;
+      const imgEl = document.getElementById('logo-watermark');
+      const iw = (imgEl && imgEl.naturalWidth) ? imgEl.naturalWidth : 1000;
+      const ih = (imgEl && imgEl.naturalHeight) ? imgEl.naturalHeight : 1000;
+      const aspect = iw/ih;
+      const maxW = pageWidth * 0.6;
+      const maxH = pageHeight * 0.6;
+      let w = maxW; let h = w/aspect;
+      if (h > maxH) { h = maxH; w = h*aspect; }
+      const x = (pageWidth - w)/2;
+      const y = (pageHeight - h)/2;
+      if (doc.GState) { doc.setGState(new doc.GState({ opacity: 0.06 })); }
+      doc.addImage('data:image/png;base64,' + b64, 'PNG', x, y, w, h);
+      if (doc.GState) { doc.setGState(new doc.GState({ opacity: 1 })); }
+    } catch (_) {}
+  };
+  const academy = "LOURDS ENGLISH ACADEMY";
+  try {
+    const headerB64 = window.logoBlackBase64 || window.logoGreyBase64 || window.logoBase64;
+    if (headerB64) { doc.addImage('data:image/png;base64,' + headerB64, 'PNG', 10, 8, 18, 18); }
+  } catch (_) {}
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text(academy, pageWidth/2, 16, {align: "center"});
+  doc.setFontSize(12);
+  doc.text(document.title || "Test Name", pageWidth/2, 22, {align: "center"});
+
+  doc.setLineWidth(0.2);
+  doc.line(tableMarginLeft, 26, tableRightX, 26);
+  doc.setFontSize(10);
+  const metaY = 30;
+  const attempted = selectedAnswers.filter(a=>a!==null).length;
+  const unattempted = 30 - attempted;
+  const scoreText = document.getElementById('score').innerText + ' / 30';
+  const elapsedSecPDF = 1800 - timeLeft;
+  const timeReadablePDF = `${String(Math.floor(elapsedSecPDF/60)).padStart(2,'0')}:${String(elapsedSecPDF%60).padStart(2,'0')}`;
+  const timeText = `${timeReadablePDF}`;
+  const cd = window.candidateInfo || {name:'',email:'',phone:'',subject:''};
+  const leftX = tableMarginLeft, rightX = tableRightX;
+  doc.text(`Name: ${cd.name || ''}`, leftX, metaY);
+  doc.text(`Email: ${cd.email || ''}`, leftX, metaY+6);
+  doc.text(`Phone: ${cd.phone || ''}`, leftX, metaY+12);
+  doc.text(`Subject: ${cd.subject || ''}`, leftX, metaY+18);
+  doc.text(`Attempted: ${attempted}`, rightX, metaY, { align: 'right' });
+  doc.text(`Unattempted: ${unattempted}`, rightX, metaY+6, { align: 'right' });
+  doc.setTextColor(0, 102, 204);
+  doc.text(`Score: ${scoreText}`, rightX, metaY+12, { align: 'right' });
+  doc.setTextColor(0, 0, 0);
+  doc.text(`Time: ${timeText}`, rightX, metaY+18, { align: 'right' });
+
+  const startY = metaY + 26;
+  const norm = (s)=> (""+s).replace(/\s+/g,' ').trim();
+  const rows = [];
+  const ansColors = [];
+  for (let i = 0; i < 30; i++) {
+    const q = questions[i];
+    const userIdx = selectedAnswers[i];
+    const correctIdx = Array.isArray(q.options) ? q.options.findIndex(o => norm(o) === norm(correctAnswers[i])) : -1;
+    const code = ['A','B','C','D'];
+    const youCode = (userIdx!==null && userIdx>=0) ? code[userIdx] : '';
+    const corrCode = (correctIdx>=0) ? code[correctIdx] : '';
+    const youText = (userIdx!==null && q.options[userIdx]) ? q.options[userIdx] : '';
+    const corrText = (correctIdx>=0 && q.options[correctIdx]) ? q.options[correctIdx] : correctAnswers[i];
+    let color = [130,130,130];
+    if (userIdx !== null) {
+      color = (userIdx === correctIdx) ? [0,128,0] : [200,0,0];
+    }
+    ansColors.push(color);
+    rows.push([
+      (i+1).toString(),
+      youCode ? `${youCode}) ${youText}` : 'Not answered',
+      corrCode ? `${corrCode}) ${corrText}` : corrText
+    ]);
+  }
+
+  if (doc.autoTable) {
+    doc.autoTable({
+      head: [['Q#', 'Your Answer', 'Correct Answer']],
+      body: rows,
+      startY: startY,
+      margin: { left: tableMarginLeft, right: 10 },
+      theme: 'grid',
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [33, 37, 41], halign: 'center', valign: 'middle', fontStyle: 'bold', textColor: 255 },
+      columnStyles: {
+        0: { halign: 'center', cellWidth: tableColumnWidths[0] },
+        1: { cellWidth: tableColumnWidths[1] },
+        2: { cellWidth: tableColumnWidths[2] }
+      },
+      didParseCell: function(data) {
+        if (data.section === 'body' && data.column.index === 1) {
+          const idx = data.row.index;
+          const col = ansColors[idx] || [0,0,0];
+          data.cell.styles.textColor = col;
+        }
+      },
+      didDrawPage: function(data) {
+        if (data.pageNumber && data.pageNumber >= 1) {
+          drawCenteredWatermark();
+        }
+        const totalPages = doc.internal.getNumberOfPages();
+        const pageStr = 'Page ' + totalPages;
+        const now = new Date();
+        const ts = `${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        doc.setFontSize(9);
+        doc.text(ts, 10, pageHeight - 8);
+        doc.text(pageStr, pageWidth - 20, pageHeight - 8);
+      }
+    });
+  } else {
+    let y = startY;
+    for (const r of rows) {
+      const line = `${r[0]}. Your: ${r[1]} | Correct: ${r[2]}`;
+      const lines = doc.splitTextToSize(line, pageWidth - 20);
+      if (y + lines.length*6 > pageHeight - 14) { doc.addPage(); y = 14; }
+      doc.text(lines, 10, y);
+      y += lines.length*6;
+    }
+  }
+
+  doc.save("Quiz_Result.pdf");
+}
+
+(function(){ try{ var tn=(document.title||'').trim() || (location.pathname.split('/').pop()||''); tn=tn.replace(/\.[^.]+$/,''); var el=document.getElementById('test-name'); if(el) el.innerText = tn?('- '+tn):''; }catch(e){} })();
+
+;(function(){
+  fetch('lourds_logo_base64.txt').then(r=>r.text()).then(t=>{
+    const raw=t.trim(); if(!raw) return;
+    window.logoBase64 = raw.replace(/^data:image\/[a-z]+;base64,/,'');
+    const img=new Image();
+    img.onload=function(){
+      try{
+        const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+        const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h; const ctx=canvas.getContext('2d');
+        ctx.drawImage(img,0,0,w,h);
+        const src=ctx.getImageData(0,0,w,h); const data=src.data;
+        const grayArr=new Uint8ClampedArray(data); const blackArr=new Uint8ClampedArray(data);
+        for(let i=0;i<data.length;i+=4){
+          const r=data[i], g=data[i+1], b=data[i+2], a=data[i+3];
+          const y=Math.round(0.299*r+0.587*g+0.114*b);
+          grayArr[i]=y; grayArr[i+1]=y; grayArr[i+2]=y; grayArr[i+3]=a;
+          const yDark=Math.max(0,Math.min(255,Math.round(y*0.25)));
+          blackArr[i]=yDark; blackArr[i+1]=yDark; blackArr[i+2]=yDark; blackArr[i+3]=a;
+        }
+        const toB64raw=(arr)=>{ const c=document.createElement('canvas'); c.width=w; c.height=h; const cx=c.getContext('2d'); const id=cx.createImageData(w,h); id.data.set(arr); cx.putImageData(id,0,0); return c.toDataURL('image/png').replace(/^data:image\/png;base64,/, ''); };
+        window.logoGreyBase64=toB64raw(grayArr);
+        window.logoBlackBase64=toB64raw(blackArr);
+      }catch(e){}
+      const el=document.getElementById('logo-watermark');
+      if(el){ el.src='data:image/png;base64,'+(window.logoGreyBase64||window.logoBase64); el.style.display='block'; }
+    };
+    img.src='data:image/png;base64,'+window.logoBase64;
+  }).catch(()=>{});
+})();
+
+try {
+  window.startQuiz = startQuiz;
+  window.prevQuestion = prevQuestion;
+  window.nextQuestion = nextQuestion;
+  window.markForReview = markForReview;
+  window.submitQuiz = submitQuiz;
+  window.selectOptionIndex = selectOptionIndex;
+  window.downloadPDF = downloadPDF;
+  window.onSubjectChange = onSubjectChange;
+} catch(_){ }
+</script>
+</body>
+</html>
