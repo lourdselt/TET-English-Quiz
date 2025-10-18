@@ -133,9 +133,9 @@ let timerInterval;
 let timeLeft = 1800;
 
 const questions = [
-  {q:"You are the farmer of the story “The Apple Tree and the Farmer.” Which memories come to your mind when you taste the fruit of the tree?", stem:"", options:["Your childhood memories","Your grandfather’s memories","Your daughter’s memories","Your father’s memories"]},
-  {q:"‘Having a friend is like planting a flower.’ What figure of speech is used here?", stem:"", options:["Personification","Metaphor","Simile","Oxymoron"]},
-  {q:"‘Thro’ scudding drifts, the rainy Hyades Vext the dim sea...’ The figure of speech employed in the above line is:", stem:"", options:["Metaphor","Personification","Transferred Epithet","Oxymoron"]},
+  {q:"You are the farmer of the story “The Apple Tree and the Farmer.”", stem:"<div>Which memories come to your mind when you taste the fruit of the tree?</div>", options:["Your childhood memories","Your grandfather’s memories","Your daughter’s memories","Your father’s memories"]},
+  {q:"‘Having a friend is like planting a flower.’", stem:"<div>What figure of speech is used here?</div>", options:["Personification","Metaphor","Simile","Oxymoron"]},
+  {q:"‘Thro’ scudding drifts, the rainy Hyades Vext the dim sea...’", stem:"<div>The figure of speech employed in the above line is:</div>", options:["Metaphor","Personification","Transferred Epithet","Oxymoron"]},
   {q:"Find out the part of speech of the underlined word:", stem:"<div>There was a <u>collection</u> of books in the rack.</div>", options:["Noun","Verb","Adjective","Adverb"]},
   {q:"Match the following awards/medals of P.V. Sindhu under Column A with the year of accomplishment under Column B and choose the correct code:", stem:`<div>
 <table class="table table-sm" style="border-collapse:collapse; width:100%;">
@@ -166,14 +166,14 @@ const questions = [
   </table>
   <div class="mt-2"><b>Codes:</b></div>
 </div>`, options:["(a)-(iv), (b)-(ii), (c)-(i), (d)-(iii)","(a)-(ii), (b)-(i), (c)-(iv), (d)-(iii)","(a)-(iv), (b)-(i), (c)-(ii), (d)-(iii)","(a)-(ii), (b)-(iii), (c)-(iv), (d)-(i)"]},
-  {q:"Read the lines and answer:", stem:`<div><em>I told my wrath, my wrath did end;<br>I told it not, my wrath did grow.</em></div>
+  {q:"Read the lines and answer:", stem:`<div>I told my wrath, my wrath did end;<br>I told it not, my wrath did grow.</div>
 <div><strong>The poet William Blake used “did end” and “did grow” to emphasize his:</strong></div>`, options:["Patience","Brilliancy","Thoughts","Wrath"]},
-  {q:"Find out the synonym for the underlined word:", stem:"<div><em>Rama looked at Ravana <u>furiously</u>.</em></div>", options:["politely","gently","angrily","calmly"]},
+  {q:"Find out the synonym for the underlined word:", stem:"<div>Rama looked at Ravana <u>furiously</u>.</div>", options:["politely","gently","angrily","calmly"]},
   {q:"The poetic device “Zoomorphism” means:", stem:"", options:["Comparing things with animal terms","Comparing things with human qualities","Comparing things with living things’ qualities","Comparing things with non-living things’ qualities"]},
   {q:"Fill in the blank with a suitable question tag:", stem:"<div>Everyone is perfect, ______?</div>", options:["isn’t they?","are they?","aren’t they?","is they?"]},
   {q:"“True Stories from History and Biography” is about:", stem:"", options:["Nathaniel Hawthorne","Leo Tolstoy","Sir Isaac Newton","John Keats"]},
   {q:"Choose the correct euphemistic expression:", stem:"<div>Due to COVID-19, my grandmother died.</div>", options:["passed in","passed away","passed out","passed with"]},
-  {q:"Use the correct form of the verb:", stem:"<div>I</div><div style=\"height:8px\"></div><div>(play) basketball for three hours.</div>", options:["am playing","play","have been playing","played"]},
+  {q:"Use the correct form of the verb:", stem:"<div>I __________ (play) basketball for three hours.</div>", options:["am playing","play","have been playing","played"]},
   {q:"Which one of the following is not a step in the process of developing reading skills?", stem:"", options:["Skimming","Editing","Decoding","Encoding"]},
   {q:"Match the idioms under Column A with their meanings under Column B.", stem:`<div>
 <table class="table table-sm" style="border-collapse:collapse; width:100%;">
@@ -200,8 +200,11 @@ const questions = [
 </table>
 <div class="mt-2"><b>Codes:</b></div>
 </div>`, options:["(a)-(ii), (b)-(iii), (c)-(i)","(a)-(i), (b)-(iii), (c)-(ii)","(a)-(iii), (b)-(i), (c)-(ii)","(a)-(i), (b)-(ii), (c)-(iii)"]},
-  {q:"Choose the correct synonym for the underlined word:", stem:"<div>While the mill was at rest, Isaac Newton <u>pried</u> into its internal machinery.</div>", options:["Investigated","Invented","Constructed","Made"]},
-  {q:"Choose the rhyme scheme of the following lines:", stem:"“With neck out-thrust you fancy how,\nLegs wide, arms locked behind,\nAs if to balance the prone brow\nOppressive with its mind.”", options:["abab","aabb","abba","aaaa"]},
+  {q:"Choose the correct synonym for the underlined word:", stem:"<div>While the mill was at rest, Isaac Newton <u>pried</u> into its internal machinery.</div>", options:["investigated","invented","constructed","made"]},
+  {q:"Choose the rhyme scheme of the following lines:", stem:`<div>1 With neck out-thrust you fancy how,</div>
+<div>2 Legs wide, arms locked behind,</div>
+<div>3 As if to balance the prone brow</div>
+<div>4 Oppressive with its mind.</div>`, options:["abab","aabb","abba","aaaa"]},
   {q:"Complete the conditional clause:", stem:"<div>If I had found her address, I ______ her an invitation.</div>", options:["would have sent","would have send","would sent","would send"]},
   {q:"Mention the figure of speech used here.", stem:"<div>“Shows only my teeth like a snake’s bare fangs!”</div>", options:["Apostrophe","Assonance","Metaphor","Simile"]},
   {q:"Choose the correct option to complete the sentence:", stem:"<div>You will certainly ______ rewards for what you are doing.</div>", options:["get","was getting","had got","be getting"]},
@@ -214,7 +217,7 @@ const questions = [
   {q:"Pick out the correct figure of speech and complete the sentence:", stem:"<div>A ______ is a figure of speech that directly compares two things.</div>", options:["personification","simile","metaphor","alliteration"]},
   {q:"The character named “Moti” in the story “Crossing the River” is: _______________", stem:"", options:["a poor village girl","a poor milkmaid","a village farmer","a little boy"]},
   {q:"Identify the type of connector employed in the above line:", stem:"<div>“I have not yet decided whether I will have the cake or the ice-cream.”</div>", options:["Coordinating","Correlative","Subordinate","Main"]},
-  {q:"A minimal unit of meaning or grammatical function is called: _____________", stem:"", options:["Morpheme","Syntax","Pragmatics","Phoneme"]},
+  {q:"A minimal unit of meaning or grammatical function is called __________ :", stem:"", options:["Morpheme","Syntax","Pragmatics","Phoneme"]},
   {q:"Choose the sentence which does not have a dependent clause:", stem:"", options:["They rested when evening came.","With a great effort, he lifted the box.","If he is at home, I shall meet him.","The evil that men do lives after them."]}
 ];
 
@@ -233,7 +236,7 @@ const correctAnswers = [
   "have been playing",
   "Editing",
   "(a)-(i), (b)-(iii), (c)-(ii)",
-  "Investigated",
+  "investigated",
   "abab",
   "would have sent",
   "Simile",
