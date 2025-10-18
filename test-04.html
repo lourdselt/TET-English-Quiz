@@ -55,6 +55,13 @@ function sendToGoogleSheet() {
   body { padding-top: 72px; }
   #result .card { position: relative; overflow: hidden; }
   .logo-watermark { position: absolute; right: 12px; top: 12px; width: 80px; height: auto; opacity: 0.12; pointer-events: none; filter: grayscale(100%); }
+  /* Align question number on the left and all question lines in a straight left line */
+  .qrow { display: flex; align-items: flex-start; gap: 10px; }
+  .qnum { flex: 0 0 40px; min-width: 40px; text-align: left; font-weight: 700; }
+  .qtext { flex: 1 1 auto; }
+  .qtext .qtitle { font-weight: 700; margin-bottom: 4px; }
+  .qtext .qstem { margin-bottom: 8px; }
+  .qtext .option-div { margin-left: 0; }
 </style>
 </head>
 <body>
@@ -171,8 +178,8 @@ const questions = [
   {q:"Find out the synonym for the underlined word:", stem:"<div>Rama looked at Ravana <u>furiously</u>.</div>", options:["politely","gently","angrily","calmly"]},
   {q:"The poetic device “Zoomorphism” means:", stem:"", options:["Comparing things with animal terms","Comparing things with human qualities","Comparing things with living things’ qualities","Comparing things with non-living things’ qualities"]},
   {q:"Fill in the blank with a suitable question tag:", stem:"<div>Everyone is perfect, ______?</div>", options:["isn’t they?","are they?","aren’t they?","is they?"]},
-  {q:"“True Stories from History and Biography” is about:", stem:"", options:["Nathaniel Hawthorne","Leo Tolstoy","Sir Isaac Newton","John Keats"]},
-  {q:"Choose the correct euphemistic expression:", stem:"<div>Due to COVID-19, my grandmother died.</div>", options:["passed in","passed away","passed out","passed with"]},
+  {q:"“True Stories from History and Biography” is about _____________", stem:"", options:["Nathaniel Hawthorne","Leo Tolstoy","Sir Isaac Newton","John Keats"]},
+  {q:"Choose the correct euphemistic expression:", stem:"<div>Due to COVID-19, my grandmother <u>died</u>.</div>", options:["passed in","passed away","passed out","passed with"]},
   {q:"Use the correct form of the verb:", stem:"<div>I __________ (play) basketball for three hours.</div>", options:["am playing","play","have been playing","played"]},
   {q:"Which one of the following is not a step in the process of developing reading skills?", stem:"", options:["Skimming","Editing","Decoding","Encoding"]},
   {q:"Match the idioms under Column A with their meanings under Column B.", stem:`<div>
@@ -201,24 +208,24 @@ const questions = [
 <div class="mt-2"><b>Codes:</b></div>
 </div>`, options:["(a)-(ii), (b)-(iii), (c)-(i)","(a)-(i), (b)-(iii), (c)-(ii)","(a)-(iii), (b)-(i), (c)-(ii)","(a)-(i), (b)-(ii), (c)-(iii)"]},
   {q:"Choose the correct synonym for the underlined word:", stem:"<div>While the mill was at rest, Isaac Newton <u>pried</u> into its internal machinery.</div>", options:["investigated","invented","constructed","made"]},
-  {q:"Choose the rhyme scheme of the following lines:", stem:`<div>1 With neck out-thrust you fancy how,</div>
-<div>2 Legs wide, arms locked behind,</div>
-<div>3 As if to balance the prone brow</div>
-<div>4 Oppressive with its mind.</div>`, options:["abab","aabb","abba","aaaa"]},
+  {q:"Choose the rhyme scheme of the following lines:", stem:`<div>With neck out-thrust you fancy how,</div>
+<div>Legs wide, arms locked behind,</div>
+<div>As if to balance the prone brow</div>
+<div>Oppressive with its mind.</div>`, options:["abab","aabb","abba","aaaa"]},
   {q:"Complete the conditional clause:", stem:"<div>If I had found her address, I ______ her an invitation.</div>", options:["would have sent","would have send","would sent","would send"]},
   {q:"Mention the figure of speech used here.", stem:"<div>“Shows only my teeth like a snake’s bare fangs!”</div>", options:["Apostrophe","Assonance","Metaphor","Simile"]},
   {q:"Choose the correct option to complete the sentence:", stem:"<div>You will certainly ______ rewards for what you are doing.</div>", options:["get","was getting","had got","be getting"]},
   {q:"Which of the following is not one of the processes to be followed while developing hints?", stem:"", options:["Read the hints carefully","Strike out unnecessary words","Understand the passage well","Give a suitable title"]},
   {q:"Choose the right question tag:", stem:"<div>She rarely comes late, ______?</div>", options:["is she?","doesn’t she?","does she?","don’t she?"]},
-  {q:"A multi-word verb made up of a main verb and a particle or preposition/adverb is called:", stem:"", options:["Phrase","Phrasal verb","Clause","Non-finite"]},
+  {q:"A multi-word verb made up of a main verb and a particle or preposition/adverb is called _____________", stem:"", options:["Phrase","Phrasal verb","Clause","Non-finite"]},
   {q:"Fill in the blanks with the correct tense form of the verb:", stem:"<div>She said that John ______ in her study for months.</div>", options:["was helping","helped","had been helping","has been helping"]},
   {q:"Choose the correct antonym for the italicized word:", stem:"<div>Ajay <u>mastered</u> the techniques of painting.</div>", options:["proficient","unskilled","experienced","skilled"]},
   {q:"“He never pushed ideas down anyone’s throat” means:", stem:"", options:["Favoured","Compelled","Opposed","Accepted"]},
   {q:"Pick out the correct figure of speech and complete the sentence:", stem:"<div>A ______ is a figure of speech that directly compares two things.</div>", options:["personification","simile","metaphor","alliteration"]},
-  {q:"The character named “Moti” in the story “Crossing the River” is: _______________", stem:"", options:["a poor village girl","a poor milkmaid","a village farmer","a little boy"]},
+  {q:"The character named “Moti” in the story “Crossing the River” is _______________.", stem:"", options:["a poor village girl","a poor milkmaid","a village farmer","a little boy"]},
   {q:"Identify the type of connector employed in the above line:", stem:"<div>“I have not yet decided whether I will have the cake or the ice-cream.”</div>", options:["Coordinating","Correlative","Subordinate","Main"]},
-  {q:"A minimal unit of meaning or grammatical function is called __________ :", stem:"", options:["Morpheme","Syntax","Pragmatics","Phoneme"]},
-  {q:"Choose the sentence which does not have a dependent clause:", stem:"", options:["They rested when evening came.","With a great effort, he lifted the box.","If he is at home, I shall meet him.","The evil that men do lives after them."]}
+  {q:"A minimal unit of meaning or grammatical function is called __________.", stem:"", options:["Morpheme","Syntax","Pragmatics","Phoneme"]},
+  {q:"Choose the sentence which does not have a dependent clause.", stem:"", options:["They rested when evening came.","With a great effort, he lifted the box.","If he is at home, I shall meet him.","The evil that men do lives after them."]}
 ];
 
 const correctAnswers = [
@@ -296,13 +303,18 @@ function buildQuestionGrid(){
 function showQuestion(index){
   document.getElementById('passage-section').style.display = 'none';
   let q = questions[index];
-  let html = `<div><b>Q${index+1}. ${q.q}</b></div>`;
-  html += `<div>${q.stem || ''}</div>`;
+  let html = `<div class="qrow">` +
+             `  <div class="qnum">Q${index+1}.</div>` +
+             `  <div class="qtext">` +
+             `    <div class="qtitle">${q.q}</div>` +
+             `    ${q.stem ? `<div class="qstem">${q.stem}</div>` : ''}`;
   const optionCodes = ['a)', 'b)', 'c)', 'd)'];
   for(let i=0;i<q.options.length;i++){
     const checked = selectedAnswers[index] === i ? 'checked' : '';
     html += `<div class="option-div"><input type="radio" name="option" id="opt${i}" value="${i}" ${checked} onclick="selectOptionIndex(${i})"> <label for="opt${i}">${optionCodes[i]} ${q.options[i]}</label></div>`;
   }
+  html += `  </div>` +
+          `</div>`;
   document.getElementById('question-area').innerHTML = html;
 }
 
