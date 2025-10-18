@@ -60,6 +60,13 @@ function sendToGoogleSheet() {
   /* Result card watermark sizing and placement */
   #result .card { position: relative; overflow: hidden; }
   .logo-watermark { position: absolute; right: 12px; top: 12px; width: 80px; height: auto; opacity: 0.12; pointer-events: none; filter: grayscale(100%); }
+  /* Align question number on the left and all question lines in a straight left line */
+  .qrow { display: flex; align-items: flex-start; gap: 10px; }
+  .qnum { flex: 0 0 40px; min-width: 40px; text-align: left; font-weight: 700; }
+  .qtext { flex: 1 1 auto; }
+  .qtext .qtitle { font-weight: 700; margin-bottom: 4px; }
+  .qtext .qstem { margin-bottom: 8px; }
+  .qtext .option-div { margin-left: 0; }
 </style>
 </head>
 <body>
