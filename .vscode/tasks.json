@@ -1,0 +1,109 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "git: push test-04 + GAS fallback",
+			"type": "shell",
+			"command": "git --no-pager status -s && git add test-04.html google_apps_script_updated.gs && git commit -m \"quiz: add test-04 page (Q61–90) and GAS fallback key; wire to existing endpoint\" && git push origin main",
+			"isBackground": false,
+			"problemMatcher": [
+				"$eslint-stylish"
+			],
+			"group": "build"
+		},
+		{
+			"label": "git: push test-04 + GAS fallback",
+			"type": "shell",
+			"command": "git --no-pager status -s && git add test-04.html google_apps_script_updated.gs && git commit -m \"fix(test-04): set Q28 answer to B (Correlative) and sync GAS fallback key\" && git push origin main",
+			"isBackground": false,
+			"problemMatcher": [
+				"$eslint-stylish"
+			],
+			"group": "build"
+		},
+		{
+			"label": "git: push test-04 + GAS fallback",
+			"type": "shell",
+			"command": "git --no-pager status -s && git add google_apps_script_updated.gs && git commit -m \"chore(GAS): add AnswerKeys upsert + fixTest04AnswerKey helper (Q28=B)\" && git push origin main",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "git: push test-06 + keys",
+			"type": "shell",
+			"command": "git --no-pager status -s && git add test-06.html index.html google_apps_script_updated.gs && git commit -m \"quiz: add test-06 (Q1–30) with correct answers; nav link; GAS fallback key for test-06\" && git push origin main",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "git: push test-06 + keys",
+			"type": "shell",
+			"command": "git --no-pager status -s && git add test-06.html && git commit -m \"test-06: regularize question font; capitalize Q28 options; ensure watermark loads in PDF\" && git push origin main",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "git: push test-06 + keys",
+			"type": "shell",
+			"command": "git --no-pager status -s && git add test-06.html && git commit -m \"test-06: bold first line of question; rest regular\" && git push origin main",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "git: push test-06 + keys",
+			"type": "shell",
+			"command": "git --no-pager status -s && git add test-06.html && git commit -m \"test-06: keep first line (question title) bold as requested\" && git push origin main",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "git: push test-06 + keys",
+			"type": "shell",
+			"command": "git --no-pager status -s && git add test-06.html && git commit -m \"test-06: bold only the first sentence of question; rest regular\" && git push origin main",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "git: push test-06 + keys",
+			"type": "shell",
+			"command": "git --no-pager status -s && git add test-06.html && git commit -m \"test-06: keep Q28 second sentence regular (moved to stem)\" && git push origin main",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "git: push test-06 + keys",
+			"type": "shell",
+			"command": "git --no-pager status -s && git add -A && git commit -m \"deploy: publish latest test-06 updates (bold first sentence, Q28 stem split, PDF watermark fix)\" && git push origin main",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "git: push to GitHub",
+			"type": "shell",
+			"command": "git --no-pager status -s; git push origin main",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "git: push to GitHub",
+			"type": "shell",
+			"command": "git --no-pager status -s; git add .nojekyll && git commit -m \"docs: add .nojekyll to force GitHub Pages static serve\" && git push origin main",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "git: push to GitHub (sync now)",
+			"type": "shell",
+			"command": "git --no-pager status -s; git push origin main",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "git: push to GitHub",
+			"type": "shell",
+			"command": "git --no-pager status -s; git add .github/workflows/pages.yml && git commit -m \"ci: add GitHub Actions workflow to deploy Pages from main\" && git push origin main",
+			"isBackground": false,
+			"group": "build"
+		}
+	]
+}

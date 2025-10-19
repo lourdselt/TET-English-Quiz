@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>test-04</title>
+<title>test-06</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -13,9 +13,9 @@ function getQuizName(){
   try{
     let tn = (document.title || "").trim();
     if(!tn){ tn = (location.pathname.split('/').pop() || '').replace(/\.[^.]+$/, ''); }
-    tn = tn || 'test-04';
+    tn = tn || 'test-06';
     return tn;
-  }catch(e){ return 'test-04'; }
+  }catch(e){ return 'test-06'; }
 }
 function sendToGoogleSheet() {
   if(!window.candidateInfo){ console.warn('No candidateInfo; skipping sheet send'); return; }
@@ -62,6 +62,9 @@ function sendToGoogleSheet() {
   .qtext .qtitle { font-weight: 700; margin-bottom: 4px; }
   .qtext .qstem { margin-bottom: 8px; }
   .qtext .option-div { margin-left: 0; }
+  .qtext .qlead-rest { font-weight: 400; margin-bottom: 6px; }
+  table.table-sm th, table.table-sm td { border: 1px solid rgba(0,0,0,0.2); }
+  table.table-sm { border-collapse: collapse; width: 100%; }
 </style>
 </head>
 <body>
@@ -140,125 +143,69 @@ let timerInterval;
 let timeLeft = 1800;
 
 const questions = [
-  {q:"You are the farmer of the story “The Apple Tree and the Farmer.”", stem:"<div>Which memories come to your mind when you taste the fruit of the tree?</div>", options:["Your childhood memories","Your grandfather’s memories","Your daughter’s memories","Your father’s memories"]},
-  {q:"‘Having a friend is like planting a flower.’", stem:"<div>What figure of speech is used here?</div>", options:["Personification","Metaphor","Simile","Oxymoron"]},
-  {q:"‘Thro’ scudding drifts, the rainy Hyades Vext the dim sea...’", stem:"<div>The figure of speech employed in the above line is:</div>", options:["Metaphor","Personification","Transferred Epithet","Oxymoron"]},
-  {q:"Find out the part of speech of the underlined word:", stem:"<div>There was a <u>collection</u> of books in the rack.</div>", options:["Noun","Verb","Adjective","Adverb"]},
-  {q:"Match the following awards/medals of P.V. Sindhu under Column A with the year of accomplishment under Column B and choose the correct code:", stem:`<div>
-<table class="table table-sm" style="border-collapse:collapse; width:100%;">
-  <thead>
-    <tr>
-      <th style="border:1px solid rgba(0,0,0,0.2); width:50%;">Column A – Awards/Medal</th>
-      <th style="border:1px solid rgba(0,0,0,0.2); width:50%;">Column B – Year</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td style="border:1px solid rgba(0,0,0,0.2);">(a) Padma Shri</td>
-      <td style="border:1px solid rgba(0,0,0,0.2);">(i) 2013</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid rgba(0,0,0,0.2);">(b) Arjuna Award</td>
-      <td style="border:1px solid rgba(0,0,0,0.2);">(ii) 2017</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid rgba(0,0,0,0.2);">(c) Silver Medal in Olympics</td>
-      <td style="border:1px solid rgba(0,0,0,0.2);">(iii) 2016</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid rgba(0,0,0,0.2);">(d) Rajiv Gandhi Khel Ratna Award</td>
-      <td style="border:1px solid rgba(0,0,0,0.2);">(iv) 2015</td>
-    </tr>
-  </tbody>
-  </table>
-  <div class="mt-2"><b>Codes:</b></div>
-</div>`, options:["(a)-(iv), (b)-(ii), (c)-(i), (d)-(iii)","(a)-(ii), (b)-(i), (c)-(iv), (d)-(iii)","(a)-(iv), (b)-(i), (c)-(ii), (d)-(iii)","(a)-(ii), (b)-(iii), (c)-(iv), (d)-(i)"]},
-  {q:"Read the lines and answer:", stem:`<div>I told my wrath, my wrath did end;<br>I told it not, my wrath did grow.</div>
-<div><strong>The poet William Blake used “did end” and “did grow” to emphasize his:</strong></div>`, options:["Patience","Brilliancy","Thoughts","Wrath"]},
-  {q:"Find out the synonym for the underlined word:", stem:"<div>Rama looked at Ravana <u>furiously</u>.</div>", options:["politely","gently","angrily","calmly"]},
-  {q:"The poetic device “Zoomorphism” means:", stem:"", options:["Comparing things with animal terms","Comparing things with human qualities","Comparing things with living things’ qualities","Comparing things with non-living things’ qualities"]},
-  {q:"Fill in the blank with a suitable question tag:", stem:"<div>Everyone is perfect, ______?</div>", options:["isn’t they?","are they?","aren’t they?","is they?"]},
-  {q:"“True Stories from History and Biography” is about _____________", stem:"", options:["Nathaniel Hawthorne","Leo Tolstoy","Sir Isaac Newton","John Keats"]},
-  {q:"Choose the correct euphemistic expression:", stem:"<div>Due to COVID-19, my grandmother <u>died</u>.</div>", options:["passed in","passed away","passed out","passed with"]},
-  {q:"Use the correct form of the verb:", stem:"<div>I __________ (play) basketball for three hours.</div>", options:["am playing","play","have been playing","played"]},
-  {q:"Which one of the following is not a step in the process of developing reading skills?", stem:"", options:["Skimming","Editing","Decoding","Encoding"]},
-  {q:"Match the idioms under Column A with their meanings under Column B.", stem:`<div>
-<table class="table table-sm" style="border-collapse:collapse; width:100%;">
-  <thead>
-    <tr>
-      <th style="border:1px solid rgba(0,0,0,0.2); width:50%;">Column A</th>
-      <th style="border:1px solid rgba(0,0,0,0.2); width:50%;">Column B</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td style="border:1px solid rgba(0,0,0,0.2);">(a) The lion’s share</td>
-      <td style="border:1px solid rgba(0,0,0,0.2);">(i) Extremely angry</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid rgba(0,0,0,0.2);">(b) Watch like a hawk</td>
-      <td style="border:1px solid rgba(0,0,0,0.2);">(ii) Very uncomfortable</td>
-    </tr>
-    <tr>
-      <td style="border:1px solid rgba(0,0,0,0.2);">(c) Fish out of water</td>
-      <td style="border:1px solid rgba(0,0,0,0.2);">(iii) Watching carefully</td>
-    </tr>
-  </tbody>
-</table>
-<div class="mt-2"><b>Codes:</b></div>
-</div>`, options:["(a)-(ii), (b)-(iii), (c)-(i)","(a)-(i), (b)-(iii), (c)-(ii)","(a)-(iii), (b)-(i), (c)-(ii)","(a)-(i), (b)-(ii), (c)-(iii)"]},
-  {q:"Choose the correct synonym for the underlined word:", stem:"<div>While the mill was at rest, Isaac Newton <u>pried</u> into its internal machinery.</div>", options:["investigated","invented","constructed","made"]},
-  {q:"Choose the rhyme scheme of the following lines:", stem:`<div>With neck out-thrust you fancy how,</div>
-<div>Legs wide, arms locked behind,</div>
-<div>As if to balance the prone brow</div>
-<div>Oppressive with its mind.</div>`, options:["abab","aabb","abba","aaaa"]},
-  {q:"Complete the conditional clause:", stem:"<div>If I had found her address, I ______ her an invitation.</div>", options:["would have sent","would have send","would sent","would send"]},
-  {q:"Mention the figure of speech used here.", stem:"<div>“Shows only my teeth like a snake’s bare fangs!”</div>", options:["Apostrophe","Assonance","Metaphor","Simile"]},
-  {q:"Choose the correct option to complete the sentence:", stem:"<div>You will certainly ______ rewards for what you are doing.</div>", options:["get","was getting","had got","be getting"]},
-  {q:"Which of the following is not one of the processes to be followed while developing hints?", stem:"", options:["Read the hints carefully","Strike out unnecessary words","Understand the passage well","Give a suitable title"]},
-  {q:"Choose the right question tag:", stem:"<div>She rarely comes late, ______?</div>", options:["is she?","doesn’t she?","does she?","don’t she?"]},
-  {q:"A multi-word verb made up of a main verb and a particle or preposition/adverb is called _____________", stem:"", options:["Phrase","Phrasal verb","Clause","Non-finite"]},
-  {q:"Fill in the blanks with the correct tense form of the verb:", stem:"<div>She said that John ______ in her study for months.</div>", options:["was helping","helped","had been helping","has been helping"]},
-  {q:"Choose the correct antonym for the italicized word:", stem:"<div>Ajay <u>mastered</u> the techniques of painting.</div>", options:["proficient","unskilled","experienced","skilled"]},
-  {q:"“He never pushed ideas down anyone’s throat” means:", stem:"", options:["Favoured","Compelled","Opposed","Accepted"]},
-  {q:"Pick out the correct figure of speech and complete the sentence:", stem:"<div>A ______ is a figure of speech that directly compares two things.</div>", options:["personification","simile","metaphor","alliteration"]},
-  {q:"The character named “Moti” in the story “Crossing the River” is _______________.", stem:"", options:["a poor village girl","a poor milkmaid","a village farmer","a little boy"]},
-  {q:"Identify the type of connector employed in the above line:", stem:"<div>“I have not yet decided whether I will have the cake or the ice-cream.”</div>", options:["Coordinating","Correlative","Subordinate","Main"]},
-  {q:"A minimal unit of meaning or grammatical function is called __________.", stem:"", options:["Morpheme","Syntax","Pragmatics","Phoneme"]},
-  {q:"Choose the sentence which does not have a dependent clause.", stem:"", options:["They rested when evening came.","With a great effort, he lifted the box.","If he is at home, I shall meet him.","The evil that men do lives after them."]}
+  {q:"The plural form of the word ‘genius’ is _________________.", stem:"", options:["genii","geniuses","genies","genias"]},
+  {q:"The rhyme scheme of the poem is _________________.", stem:"<div>‘With neck-out thrust, you fancy how,<br>Legs wide, arms locked behind,<br>As if to balance the prone brow<br>Oppressive with its mind’.</div>", options:["abba","aabb","abab","aacb"]},
+  {q:"Choose the correct usage of the modal verb. <br>We should help the needy.", stem:"", options:["ability","possibility","request","advice"]},
+  {q:"The Madras Crocodile Bank, one of the largest reptile zoos in the world, is located at _________________.", stem:"", options:["the East Coast Road, Kovalam, in Chennai","the Coromandel Coast, Karaikal, in Puducherry","the Malabar Coast, Cochin, in Kerala","the Western Coastal Plain, Kanyakumari, in Tamil Nadu"]},
+  {q:"Fill in the blank with suitable homophones. <br>Siva wears a belt around her _________________.", stem:"", options:["waste","waist","waiste","weist"]},
+  {q:"Choose the correct synonym of the underlined word. <br>His dream <u>shattered</u> since his family did not encourage and support him.", stem:"", options:["destroyed","benefited","succeeded","depressed"]},
+  {q:"Who is the Moon Goddess? <br>(i) Cynthia (ii) Athena (iii) Demeter (iv) Aphrodite", stem:"", options:["(i)","(iii)","(iv)","(ii)"]},
+  {q:"Choose the correct phrasal verb for the given meaning. <br>‘To go away from home for a vacation’", stem:"", options:["get in","get off","get on","get away"]},
+  {q:"_________________ you shut the door, please? (Choose the correct modal verb)", stem:"", options:["will","would","can","could"]},
+  {q:"Choose the right pattern of the given sentence. <br>During the war, many people lost their homes.", stem:"", options:["ASVIODO","ASVDO","SVIODO","SVCA"]},
+  {q:"Identify the tense form of the following sentence. <br>‘We are meeting the Prime Minister tomorrow.’", stem:"", options:["Present continuous tense","Past continuous tense","Future continuous tense","Present perfect continuous tense"]},
+  {q:"Find the genre of the poem from the following description. <br>‘A silly poem with five lines in which the first, second and fifth lines rhyme with each other, and have the same number of syllables’.", stem:"", options:["Sonnet","Lyric","Limerick","Ode"]},
+  {q:"Which of the given options is a metaphor?", stem:"", options:["Her voice is music to his ears","The flowers nodded their heads","The bus is slow as a snail","The boat danced in the puddle"]},
+  {q:"Whose pen name is George Eliot?", stem:"", options:["Enid Blyton","Robert Frost","Shanthini Govindan","Mary Ann Evans"]},
+  {q:"Choose the plural form of ‘daughter-in-law’.", stem:"", options:["Daughters-in-law","Daughter-in-laws","Daughters-in-laws","Daughter-ins-law"]},
+  {q:"The Red Cross Society is an international _________________.", stem:"", options:["humanitarian service organisation","health organisation","American organisation","children organisation"]},
+  {q:"Which sentence is correctly arranged in proper word order?", stem:"", options:["she was determined to / not be a coward / in such a situation / and she lived up to her word","in such a situation / not be a coward / and she lived up to her word / she was determined to","and she lived up to her word / in such a situation / not be a coward / she was determined to","she was determined to / in such a situation / and she lived up to her word / not to be a coward"]},
+  {q:"She has been playing hockey _________________ 3 hours.", stem:"", options:["since","for","or","from"]},
+  {q:"Convert the following active sentence into passive. <br>She has won the first prize.", stem:"", options:["The first prize has won by her.","The first prize has been won by her.","The first prize had been won by her.","The first prize won by her."]},
+  {q:"Identify the pattern of the following sentence. <br>Reading made him a complete man.", stem:"", options:["SVOA","SVOC","SVIODO","SVCA"]},
+  {q:"Identify the error in the following sentence and replace with the correct option. <br>Neither his friends nor Victor are aware of the news.", stem:"", options:["were","have been","was","is"]},
+  {q:"The process of producing a noun from another part of speech by adding a derivational affix is called _________________.", stem:"", options:["nominalisation","affixation","passivisation","pluralisation"]},
+  {q:"Choose the correct antonym for ‘moist’.", stem:"", options:["marshy","slimy","sultry","arid"]},
+  {q:"_________________ is a figure of speech in which a part is made to represent the whole or vice versa.", stem:"", options:["Imagery","Synecdoche","Symbolism","Hyperbole"]},
+  {q:"Identify the correct blend word for ‘email’.", stem:"", options:["electro + mail","execute + mail","electric + mail","electronic + mail"]},
+  {q:"Fill in the blank with correct infinitive. <br>Solar energy is used _________________ electricity.", stem:"", options:["to collect","to collecting","for collected","in collect"]},
+  {q:"The idiomatic expression ‘at sixes and sevens’ means _________________ .", stem:"", options:["moving very slowly","completely perfect","take a gap or break","in a state of disorder"]},
+  {q:"‘We have not watched such a thrilling movie as this.’", stem:"Identify the correct comparative degree for the given sentence.", options:["This movie is more thrilling than most other movies we never watched.","This movie is most thrilling than many other movies we have ever watched.","This is the most thrilling movie we have ever watched.","This movie is more thrilling than any other movie we have ever watched."]},
+  {q:"Choose the correct option. <br>If he had more money, he _________________ (travel).", stem:"", options:["would have travelled","will travel","would travel","shall travel"]},
+  {q:"Choose the best option. <br>One who studies languages and their structure is called _________________ .", stem:"", options:["pathologist","linguist","ornithologist","geologist"]}
 ];
 
 const correctAnswers = [
-  "Your childhood memories",
-  "Simile",
-  "Personification",
-  "Noun",
-  "(a)-(iv), (b)-(i), (c)-(ii), (d)-(iii)",
-  "Wrath",
-  "angrily",
-  "Comparing things with animal terms",
-  "aren’t they?",
-  "Sir Isaac Newton",
-  "passed away",
-  "have been playing",
-  "Editing",
-  "(a)-(i), (b)-(iii), (c)-(ii)",
-  "investigated",
+  "geniuses",
   "abab",
-  "would have sent",
-  "Simile",
-  "get",
-  "Strike out unnecessary words",
-  "does she?",
-  "Phrasal verb",
-  "had been helping",
-  "unskilled",
-  "Compelled",
-  "simile",
-  "a poor milkmaid",
-  "Correlative",
-  "Morpheme",
-  "With a great effort, he lifted the box."
+  "advice",
+  "the East Coast Road, Kovalam, in Chennai",
+  "waist",
+  "destroyed",
+  "(i)",
+  "get away",
+  "will",
+  "ASVDO",
+  "Present continuous tense",
+  "Limerick",
+  "Her voice is music to his ears",
+  "Mary Ann Evans",
+  "Daughters-in-law",
+  "humanitarian service organisation",
+  "she was determined to / not be a coward / in such a situation / and she lived up to her word",
+  "for",
+  "The first prize has been won by her.",
+  "SVOC",
+  "is",
+  "nominalisation",
+  "arid",
+  "Synecdoche",
+  "electronic + mail",
+  "to collect",
+  "in a state of disorder",
+  "this movie is more thrilling than any other movie we have ever watched.",
+  "would travel",
+  "linguist"
 ];
 
 function startQuiz(){
@@ -303,15 +250,29 @@ function buildQuestionGrid(){
 function showQuestion(index){
   document.getElementById('passage-section').style.display = 'none';
   let q = questions[index];
-  let html = `<div class="qrow">` +
-             `  <div class="qnum">Q${index+1}.</div>` +
-             `  <div class="qtext">` +
-             `    <div class="qtitle">${q.q}</div>` +
-             `    ${q.stem ? `<div class="qstem">${q.stem}</div>` : ''}`;
+  // Split q.q into first sentence (bold) and the rest (regular)
+  const qq = String(q.q || '');
+  let firstSent = qq;
+  let restSent = '';
+  try {
+    // Find first sentence up to ., ?, or ! before a space or <br> or end
+    const m = qq.match(/^[\s\S]*?[.!?](?=(\s|<br>|$))/i);
+    if (m && m[0].length > 0 && m[0].length < qq.length) {
+      firstSent = m[0];
+      restSent = qq.slice(m[0].length).replace(/^\s*(<br\s*\/?>)?\s*/i, '');
+    }
+  } catch(_) {}
+
+  let html = `<div class=\"qrow\">` +
+             `  <div class=\"qnum\">Q${index+1}.</div>` +
+             `  <div class=\"qtext\">` +
+             `    <div class=\"qtitle\">${firstSent}</div>` +
+             (restSent ? `    <div class=\"qlead-rest\">${restSent}</div>` : '') +
+             `    ${q.stem ? `<div class=\"qstem\">${q.stem}</div>` : ''}`;
   const optionCodes = ['a)', 'b)', 'c)', 'd)'];
   for(let i=0;i<q.options.length;i++){
     const checked = selectedAnswers[index] === i ? 'checked' : '';
-    html += `<div class="option-div"><input type="radio" name="option" id="opt${i}" value="${i}" ${checked} onclick="selectOptionIndex(${i})"> <label for="opt${i}">${optionCodes[i]} ${q.options[i]}</label></div>`;
+    html += `<div class=\"option-div\"><input type=\"radio\" name=\"option\" id=\"opt${i}\" value=\"${i}\" ${checked} onclick=\"selectOptionIndex(${i})\"> <label for=\"opt${i}\">${optionCodes[i]} ${q.options[i]}</label></div>`;
   }
   html += `  </div>` +
           `</div>`;
@@ -501,7 +462,7 @@ function downloadPDF(){
   fetch('lourds_logo_base64.txt').then(r=>r.text()).then(t=>{
     const raw=t.trim(); if(!raw) return;
     window.logoBase64 = raw.replace(/^data:image\/[a-z]+;base64,/,'');
-    const img=new Image();
+  const img=new Image();
     img.onload=function(){
       try{
         const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
@@ -516,12 +477,18 @@ function downloadPDF(){
           const yDark=Math.max(0,Math.min(255,Math.round(y*0.25)));
           blackArr[i]=yDark; blackArr[i+1]=yDark; blackArr[i+2]=yDark; blackArr[i+3]=a;
         }
-        const toB64raw=(arr)=>{ const c=document.createElement('canvas'); c.width=w; c.height=h; const cx=c.getContext('2d'); const id=cx.createImageData(w,h); id.data.set(arr); cx.putImageData(id,0,0); return c.toDataURL('image/png').replace(/^data:image\/png;base64,/, ''); };
+  const toB64raw=(arr)=>{ const c=document.createElement('canvas'); c.width=w; c.height=h; const cx=c.getContext('2d'); const id=cx.createImageData(w,h); id.data.set(arr); cx.putImageData(id,0,0); return c.toDataURL('image/png').replace(/^data:image\/png;base64,/, ''); };
         window.logoGreyBase64=toB64raw(grayArr);
         window.logoBlackBase64=toB64raw(blackArr);
       }catch(e){}
       const el=document.getElementById('logo-watermark');
-      if(el){ el.src='data:image/png;base64,'+(window.logoGreyBase64||window.logoBase64); el.style.display='block'; }
+      if(el){
+        const srcB64 = window.logoBlackBase64 || window.logoGreyBase64 || window.logoBase64;
+        if (srcB64) {
+          el.src = 'data:image/png;base64,' + srcB64;
+          el.style.display = 'block';
+        }
+      }
     };
     img.src='data:image/png;base64,'+window.logoBase64;
   }).catch(()=>{});

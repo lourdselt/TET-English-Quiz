@@ -216,8 +216,9 @@ function getHardcodedKey(quizName) {
     "test-01": ["C","B","A","D","B","A","C","B","C","D","B","C","C","A","D","B","A","D","C","A","A","C","D","A","B","D","B","D","A","B"],
     "test-02": ["C","B","D","D","C","C","B","D","B","B","D","B","B","A","B","D","B","D","C","A","C","C","A","A","B","B","A","D","C","C"],
     "test-03": ["C","B","B","A","B","A","C","A","B","B","C","D","B","B","A","B","C","C","A","D","A","A","D","B","D","B","A","A","B","A"],
-  "test-04": ["A","C","B","A","C","D","C","A","C","C","B","C","B","B","A","A","A","D","A","B","C","B","C","B","B","B","B","C","A","B"],
+  "test-04": ["A","C","B","A","C","D","C","A","C","C","B","C","B","B","A","A","A","D","A","B","C","B","C","B","B","B","B","B","A","B"],
   "test-05": ["B","C","D","A","C","C","B","C","A","C","B","C","C","C","B","C","A","D","C","A","D","B","A","C","C","B","C","B","B","B"],
+  "test-06": ["B","C","D","A","B","A","A","D","A","B","A","C","A","D","A","A","A","B","B","B","D","A","D","B","D","A","D","D","C","B"],
     "Test1": ["C","B","A","D","B","A","B","B","C","B","B","C","C","A","D","B","A","D","C","A","A","C","D","A","B","D","B","D","A","B"],
     "Test2": ["C","B","D","D","C","C","B","D","B","B","D","B","B","A","B","D","B","D","C","A","C","C","A","A","B","B","A","D","C","C"]
   };
@@ -407,12 +408,13 @@ function getHardcodedKey(quizName) {
     "Test3": ["C","B","B","A","B","A","C","A","B","B","C","D","B","B","A","B","C","C","A","D","A","A","D","B","D","B","A","A","B","A"],
     "test3": ["C","B","B","A","B","A","C","A","B","B","C","D","B","B","A","B","C","C","A","D","A","A","D","B","D","B","A","A","B","A"],
     "test-03": ["C","B","B","A","B","A","C","A","B","B","C","D","B","B","A","B","C","C","A","D","A","A","D","B","D","B","A","A","B","A"],
-    "Test4": ["A","C","B","A","C","D","C","A","C","C","B","C","B","B","A","A","A","D","A","B","C","B","C","B","B","B","B","C","A","B"],
-    "test4": ["A","C","B","A","C","D","C","A","C","C","B","C","B","B","A","A","A","D","A","B","C","B","C","B","B","B","B","C","A","B"],
-    "test-04": ["A","C","B","A","C","D","C","A","C","C","B","C","B","B","A","A","A","D","A","B","C","B","C","B","B","B","B","C","A","B"],
+  "Test4": ["A","C","B","A","C","D","C","A","C","C","B","C","B","B","A","A","A","D","A","B","C","B","C","B","B","B","B","B","A","B"],
+  "test4": ["A","C","B","A","C","D","C","A","C","C","B","C","B","B","A","A","A","D","A","B","C","B","C","B","B","B","B","B","A","B"],
+  "test-04": ["A","C","B","A","C","D","C","A","C","C","B","C","B","B","A","A","A","D","A","B","C","B","C","B","B","B","B","B","A","B"],
     "Test5": ["B","C","D","A","C","C","B","C","A","C","B","C","C","C","B","C","A","D","C","A","D","B","A","C","C","B","C","B","B","B"],
     "test5": ["B","C","D","A","C","C","B","C","A","C","B","C","C","C","B","C","A","D","C","A","D","B","A","C","C","B","C","B","B","B"],
-    "test-05": ["B","C","D","A","C","C","B","C","A","C","B","C","C","C","B","C","A","D","C","A","D","B","A","C","C","B","C","B","B","B"]
+    "test-05": ["B","C","D","A","C","C","B","C","A","C","B","C","C","C","B","C","A","D","C","A","D","B","A","C","C","B","C","B","B","B"],
+    "test-06": ["B","C","D","A","B","A","A","D","A","B","A","C","A","D","A","A","A","B","B","B","D","A","D","B","D","A","D","D","C","B"]
   };
   
   // Try exact match first
@@ -517,4 +519,46 @@ function setupQuizSystem() {
   });
   
   console.log("Quiz system setup complete!");
+}
+
+/**
+ * Upsert a row in the AnswerKeys sheet.
+ * If a row with quizName (case-insensitive) exists, update its CSV; else append a new row.
+ */
+function upsertAnswerKeyEntry(quizName, csv) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("AnswerKeys");
+  if (!sheet) {
+    sheet = ss.insertSheet("AnswerKeys");
+    sheet.getRange(1, 1, 1, 2).setValues([["Quiz Name", "Answer Key (CSV)"]]);
+    var headerRange = sheet.getRange(1, 1, 1, 2);
+    headerRange.setFontWeight("bold").setBackground("#f0f0f0");
+  }
+
+  var vals = sheet.getDataRange().getValues();
+  var norm = function (x) { return String(x || '').toLowerCase().replace(/[^a-z0-9]/g, ''); };
+  var target = norm(quizName);
+  var foundRow = -1;
+  for (var r = 2; r <= vals.length; r++) { // start from row 2 (skip header)
+    var nameCell = sheet.getRange(r, 1).getValue();
+    if (!nameCell) continue;
+    if (norm(nameCell) === target) { foundRow = r; break; }
+  }
+
+  if (foundRow > 0) {
+    sheet.getRange(foundRow, 1, 1, 2).setValues([[quizName, csv]]);
+  } else {
+    sheet.appendRow([quizName, csv]);
+  }
+  sheet.autoResizeColumns(1, 2);
+}
+
+/**
+ * One-off helper to fix the AnswerKeys row for test-04 (Q28 should be B).
+ * Run this manually from the Apps Script editor once.
+ */
+function fixTest04AnswerKey() {
+  var name = "test-04";
+  var csv = "A,C,B,A,C,D,C,A,C,C,B,C,B,B,A,A,A,D,A,B,C,B,C,B,B,B,B,B,A,B";
+  upsertAnswerKeyEntry(name, csv);
 }

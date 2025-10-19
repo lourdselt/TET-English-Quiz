@@ -9,12 +9,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
 <script>
-// Derive quiz name from page title or file name, fallback to "Test1"
 function getQuizName(){
   try{
-    let tn = (document.title || "").trim();
-    if(!tn){ tn = (location.pathname.split('/').pop() || '').replace(/\.[^.]+$/, ''); }
-    return tn || 'Test1';
+    let tn=(document.title||"").trim();
+    if(!tn){ tn=(location.pathname.split('/').pop()||'').replace(/\.[^.]+$/, ''); }
+    return tn||'Test1';
   }catch(e){ return 'Test1'; }
 }
 
@@ -26,25 +25,16 @@ function sendToGoogleSheet() {
   const score = document.getElementById('score').innerText;
   const timeTaken = ((1800 - timeLeft) / 60).toFixed(2) + " minutes";
 
-  // Convert selected index to A–D code
-  const answers = selectedAnswers.map((idx) => idx===null?"":['A','B','C','D'][idx]);
+  const answers = selectedAnswers.map((idx)=> idx===null?"":['A','B','C','D'][idx]);
   const answerTexts = selectedAnswers.map((idx,i)=> (idx!==null && questions[i] && questions[i].options[idx])? questions[i].options[idx] : "");
   console.log('Selected indices:', JSON.stringify(selectedAnswers));
   console.log('Answer codes to send:', JSON.stringify(answers));
 
-  const payload = {
-    quizName: getQuizName(), name, email, phone, subject,
-    attempted, unattempted, score, timeTaken,
-    answers, answerCodes: answers, answerTexts
-  };
+  const payload = { quizName: getQuizName(), name, email, phone, subject, attempted, unattempted, score, timeTaken, answers, answerCodes: answers, answerTexts };
 
   fetch("https://script.google.com/macros/s/AKfycbzMafiozr8HXFsafF3VgF7N_5PdCYkD24kQCv00s5u4bOqcJ40kqrn5Wxo4BzREcSWpMA/exec", {
-    method: "POST",
-    body: JSON.stringify(payload),
-    mode: "no-cors"
-  })
-  .then(() => console.log("Sheet submission sent"))
-  .catch(err => console.error("Error sending to sheet:", err));
+    method: "POST", body: JSON.stringify(payload), mode: "no-cors"
+  }).then(() => console.log("Sheet submission sent")).catch(err => console.error("Error sending to sheet:", err));
 }
 
 </script>
@@ -129,20 +119,6 @@ function sendToGoogleSheet() {
     <div id="test-name" class="testname"></div>
   </header>
 
-<div class="container mt-3">
-  <div class="card p-3 shadow-sm">
-    <h5 class="mb-2">Tests</h5>
-    <div class="d-flex flex-wrap gap-3">
-      <a class="btn btn-outline-primary btn-sm" href="test-01.html">Open test-01</a>
-      <a class="btn btn-outline-primary btn-sm" href="test-02.html">Open test-02</a>
-      <a class="btn btn-outline-primary btn-sm" href="test-03.html">Open test-03</a>
-      <a class="btn btn-outline-primary btn-sm" href="test-04.html">Open test-04</a>
-  <a class="btn btn-outline-primary btn-sm" href="test-05.html">Open test-05</a>
-  <a class="btn btn-primary btn-sm" href="test-06.html">Open test-06</a>
-    </div>
-  </div>
- </div>
-
 <div class="container my-4">
   <div id="login" class="card p-4 shadow">
     <h3 class="mb-3">Enter Candidate Details</h3>
@@ -211,7 +187,7 @@ function sendToGoogleSheet() {
 
 <script>
 let currentQuestion = 0;
-// Store selected answers as option indices (0-3) for reliability
+// Use indices (0-3) for reliable selection
 let selectedAnswers = Array(30).fill(null);
 let markedQuestions = Array(30).fill(false);
 let timerInterval;
@@ -340,8 +316,8 @@ function selectOptionIndex(idx){ selectedAnswers[currentQuestion] = idx; updateG
 function updateGridStatus(){
   for(let i=0;i<30;i++){
     let btn = document.getElementById('qbtn'+i);
-    if(markedQuestions[i]) btn.className='marked';
-    else if(selectedAnswers[i] !== null) btn.className='answered';
+  if(markedQuestions[i]) btn.className='marked';
+  else if(selectedAnswers[i] !== null) btn.className='answered';
     else btn.className='unanswered';
   }
 }
@@ -394,22 +370,84 @@ function showResult(){
 }
 
 function downloadPDF(){
-  const { jsPDF }=window.jspdf;
-  const doc=new jsPDF({format:'a4',unit:'mm'});
-  const pageWidth=doc.internal.pageSize.getWidth();
-  doc.setFont("helvetica","bold");
-  doc.setFontSize(16);
-  doc.text("LOURDS ENGLISH ACADEMY",pageWidth/2,16,{align:"center"});
-  doc.setFontSize(12);
-  doc.text(document.title||"Test Name",pageWidth/2,22,{align:"center"});
-  let y=30;
-  doc.setFontSize(11);
-  doc.text("Total Questions: 30",10,y); y+=6;
-  doc.text("Attempted: "+selectedAnswers.filter(a=>a!==null).length,10,y); y+=6;
-  doc.text("Unattempted: "+(30-selectedAnswers.filter(a=>a!==null).length),10,y); y+=6;
-  doc.text("Score: "+document.getElementById('score').innerText+" / 30",10,y); y+=6;
-  doc.text("Time Taken: "+((1800-timeLeft)/60).toFixed(2)+" minutes",10,y);
-  doc.save("Quiz_Result.pdf");
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({format: 'a4', unit: 'mm'});
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  // Centered large watermark helper
+  const drawCenteredWatermark = () => {
+    try {
+      if (!window.logoBase64) return;
+      const maxW = pageWidth * 0.6;
+      const maxH = pageHeight * 0.6;
+      let w = maxW, h = maxH;
+      if (doc.GState) doc.setGState(new doc.GState({ opacity: 0.08 }));
+      doc.addImage('data:image/png;base64,' + window.logoBase64, 'PNG', (pageWidth-w)/2, (pageHeight-h)/2, w, h);
+      if (doc.GState) doc.setGState(new doc.GState({ opacity: 1 }));
+    } catch(_){}
+  };
+  // First page watermark
+  drawCenteredWatermark();
+
+  // Header with small brand logo and titles
+  try { if (window.logoBase64) { doc.addImage('data:image/png;base64,'+window.logoBase64,'PNG',10,8,18,18);} } catch(_){}
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(16); doc.text('LOURDS ENGLISH ACADEMY', pageWidth/2, 16, {align:'center'});
+  doc.setFontSize(12); doc.text(document.title || 'Test Name', pageWidth/2, 22, {align:'center'});
+
+  // Candidate meta
+  const metaY = 30;
+  const attempted = selectedAnswers.filter(a=>a!==null).length;
+  const unattempted = 30 - attempted;
+  const scoreText = document.getElementById('score').innerText + ' / 30';
+  const timeText = ((1800-timeLeft)/60).toFixed(2) + ' minutes';
+  const cd = window.candidateInfo || {name:'',email:'',phone:'',subject:''};
+  doc.setFontSize(10); doc.setFont('helvetica','normal');
+  doc.text(`Name: ${cd.name || ''}`, 10, metaY);
+  doc.text(`Email: ${cd.email || ''}`, 10, metaY+6);
+  doc.text(`Phone: ${cd.phone || ''}`, 10, metaY+12);
+  doc.text(`Subject: ${cd.subject || ''}`, 10, metaY+18);
+  doc.text(`Attempted: ${attempted}`, pageWidth/2, metaY);
+  doc.text(`Unattempted: ${unattempted}`, pageWidth/2, metaY+6);
+  doc.text(`Score: ${scoreText}`, pageWidth/2, metaY+12);
+  doc.text(`Time: ${timeText}`, pageWidth/2, metaY+18);
+
+  // Build table rows
+  const startY = metaY + 26;
+  const norm=(s)=> (''+s).replace(/\s+/g,' ').trim();
+  const rows=[]; const codes=['A','B','C','D'];
+  for(let i=0;i<30;i++){
+    const q=questions[i];
+    const userIdx=selectedAnswers[i];
+    const correctIdx = Array.isArray(q.options) ? q.options.findIndex(o=>norm(o)===norm(correctAnswers[i])) : -1;
+    const youCode = (userIdx!==null && userIdx>=0) ? codes[userIdx] : '';
+    const corrCode = (correctIdx>=0) ? codes[correctIdx] : '';
+    const youText = (userIdx!==null && q.options[userIdx]) ? q.options[userIdx] : '';
+    const corrText = (correctIdx>=0 && q.options[correctIdx]) ? q.options[correctIdx] : correctAnswers[i];
+    const status = (userIdx!==null && userIdx===correctIdx) ? '✔' : (youCode? '✘' : '—');
+    rows.push([(i+1).toString(), youCode ? `${youCode}) ${youText}` : 'Not answered', corrCode ? `${corrCode}) ${corrText}` : corrText, status]);
+  }
+
+  // Mild header colors to save ink
+  if (doc.autoTable) {
+    doc.autoTable({
+      head: [['Q#', 'Your Answer', 'Correct Answer', 'Result']],
+      body: rows,
+      startY,
+      theme: 'grid',
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [230, 230, 230], textColor: [0,0,0], halign: 'center', valign: 'middle', fontStyle: 'bold' },
+      columnStyles: { 0: { halign:'center', cellWidth: 12 }, 1: { cellWidth: 82 }, 2: { cellWidth: 82 }, 3: { halign:'center', cellWidth: 12 } },
+      didDrawPage: function(data){
+        if (data.pageNumber && data.pageNumber > 1) { drawCenteredWatermark(); }
+        const str = 'Page ' + doc.internal.getNumberOfPages();
+        doc.setFontSize(9); doc.text(str, pageWidth - 20, pageHeight - 8);
+      }
+    });
+  }
+
+  doc.save('Quiz_Result.pdf');
 }
 
 // Set test name in header (use document.title, fallback to filename)
@@ -439,17 +477,6 @@ function downloadPDF(){
     })
     .catch(err => { console.warn('Could not load logo base64:', err); });
 })();
-
-// Ensure functions are accessible from inline onclick handlers (global scope safety)
-try {
-  window.startQuiz = startQuiz;
-  window.prevQuestion = prevQuestion;
-  window.nextQuestion = nextQuestion;
-  window.markForReview = markForReview;
-  window.submitQuiz = submitQuiz;
-  window.selectOptionIndex = selectOptionIndex;
-  window.downloadPDF = downloadPDF;
-} catch (e) { /* noop */ }
 </script>
 
 </body>
